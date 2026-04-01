@@ -1,0 +1,77 @@
+import { useState } from 'react';
+import { LogOut, MessageCircle, Search } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { getInitials } from '../../utils/formatTime';
+import ChatList from './ChatList';
+
+export default function Sidebar({ selectedUser, onSelectUser }) {
+  const { currentUser, logout } = useAuth();
+  const [search, setSearch] = useState('');
+
+  return (
+    <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-panel border-r border-white/[0.06] h-full flex-shrink-0">
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Avatar */}
+          <div
+            className="avatar w-10 h-10 text-sm flex-shrink-0"
+            style={{ backgroundColor: currentUser?.avatarColor || '#7c3aed' }}
+          >
+            {getInitials(currentUser?.username)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-text-primary font-semibold text-sm truncate leading-tight">
+              {currentUser?.username}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-2 h-2 bg-green-400 rounded-full inline-block" />
+              <span className="text-text-muted text-xs">Online</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={logout}
+          title="Sign out"
+          className="p-2 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Section label + Search */}
+      <div className="px-4 pt-4 pb-2 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-3">
+          <MessageCircle className="w-3.5 h-3.5 text-accent-light" />
+          <span className="text-[11px] font-semibold text-text-muted uppercase tracking-widest">
+            Messages
+          </span>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+          <input
+            id="search-users"
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search people..."
+            className="w-full bg-bg-secondary border border-white/[0.06] rounded-xl pl-9 pr-4 py-2.5
+                       text-text-primary placeholder:text-text-muted text-sm
+                       focus:border-accent/30 focus:ring-1 focus:ring-accent/20 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Scrollable user list */}
+      <div className="flex-1 overflow-y-auto">
+        <ChatList
+          search={search}
+          selectedUser={selectedUser}
+          onSelectUser={onSelectUser}
+        />
+      </div>
+    </aside>
+  );
+}
