@@ -35,6 +35,8 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    pinnedChats:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    archivedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );

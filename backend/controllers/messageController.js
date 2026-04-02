@@ -76,15 +76,19 @@ const markMessagesAsRead = async (req, res) => {
   try {
     const receiverId = req.user._id;
     const senderId = req.params.senderId;
+    const now = new Date();
 
     await Message.updateMany(
       { senderId, receiverId, status: { $ne: 'read' } },
-      { $set: { status: 'read' } }
+      { $set: { status: 'read', readAt: now } }
     );
 
-    // Emit socket event to sender so their UI updates
+    // Emit socket event to sender so their UI updates (include readAt for seen timestamp)
     const io = getIO();
-    io.to(senderId.toString()).emit('messagesRead', { receiverId: receiverId.toString() });
+    io.to(senderId.toString()).emit('messagesRead', { 
+      receiverId: receiverId.toString(),
+      readAt: now.toISOString(),
+    });
 
     res.json({ success: true });
   } catch (error) {

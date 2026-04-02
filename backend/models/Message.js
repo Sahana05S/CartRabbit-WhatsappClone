@@ -41,6 +41,7 @@ const messageSchema = new mongoose.Schema(
       enum: ['sent', 'delivered', 'read'],
       default: 'sent',
     },
+    readAt: { type: Date, default: null },
     reactions: [
       {
         userId: {

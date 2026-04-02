@@ -1,7 +1,8 @@
 import { getInitials, formatPreviewTime } from '../../utils/formatTime';
 import { useAuth } from '../../context/AuthContext';
+import { Pin, Archive, PinOff, ArchiveRestore } from 'lucide-react';
 
-export default function ChatListItem({ user, isActive, isOnline, onClick }) {
+export default function ChatListItem({ user, isActive, isOnline, onClick, onTogglePin, onToggleArchive }) {
   const { currentUser } = useAuth();
   
   const lastMessage = user.lastMessage;
@@ -11,9 +12,9 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
   );
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] transition-all text-left
+      className={`group w-full flex items-center gap-3 px-4 py-3 border-b border-white/[0.04] transition-all text-left cursor-pointer relative
         ${isActive ? 'bg-bg-active border-l-2 border-l-accent pl-[14px]' : 'hover:bg-bg-hover border-l-2 border-l-transparent'}
       `}
     >
@@ -56,14 +57,33 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
               return <>{prefix}{body}</>;
             })() : (isOnline ? 'Online' : 'Offline')}
           </p>
-          
-          {user.unreadCount > 0 && (
-            <span className="flex-shrink-0 bg-accent text-white text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse">
-              {user.unreadCount > 99 ? '99+' : user.unreadCount}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {user.isPinned && <Pin className="w-3 h-3 text-text-muted rotate-45" />}
+            {user.unreadCount > 0 && (
+              <span className="bg-accent text-white text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse">
+                {user.unreadCount > 99 ? '99+' : user.unreadCount}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </button>
+
+      <div className={`absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-bg-panel/90 backdrop-blur-sm p-1 rounded-lg border border-white/[0.06] shadow-xl z-10 ${isActive ? 'bg-bg-active/90' : 'group-hover:bg-bg-hover/90'}`}>
+        <button
+          onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+          className="p-1.5 text-text-muted hover:text-accent-light rounded-md hover:bg-white/10"
+          title={user.isPinned ? "Unpin chat" : "Pin chat"}
+        >
+          {user.isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleArchive(); }}
+          className="p-1.5 text-text-muted hover:text-accent-light rounded-md hover:bg-white/10"
+          title={user.isArchived ? "Unarchive chat" : "Archive chat"}
+        >
+          {user.isArchived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+    </div>
   );
 }

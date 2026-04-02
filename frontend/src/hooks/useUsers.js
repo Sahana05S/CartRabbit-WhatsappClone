@@ -153,5 +153,39 @@ export const useUsers = (selectedUserId) => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  return { users, loading, error, refetch: fetchUsers };
+  // Pin/Unpin chat
+  const togglePinChat = useCallback(async (userId) => {
+    // Optimistic update
+    setUsers((prev) => prev.map(u => 
+      u._id === userId ? { ...u, isPinned: !u.isPinned } : u
+    ));
+    try {
+      await api.post(`/users/${userId}/pin`);
+    } catch (err) {
+      console.error('Failed to pin chat', err);
+      // Revert on failure
+      setUsers((prev) => prev.map(u => 
+        u._id === userId ? { ...u, isPinned: !u.isPinned } : u
+      ));
+    }
+  }, []);
+
+  // Archive/Unarchive chat
+  const toggleArchiveChat = useCallback(async (userId) => {
+    // Optimistic update
+    setUsers((prev) => prev.map(u => 
+      u._id === userId ? { ...u, isArchived: !u.isArchived } : u
+    ));
+    try {
+      await api.post(`/users/${userId}/archive`);
+    } catch (err) {
+      console.error('Failed to archive chat', err);
+      // Revert on failure
+      setUsers((prev) => prev.map(u => 
+        u._id === userId ? { ...u, isArchived: !u.isArchived } : u
+      ));
+    }
+  }, []);
+
+  return { users, loading, error, refetch: fetchUsers, togglePinChat, toggleArchiveChat };
 };

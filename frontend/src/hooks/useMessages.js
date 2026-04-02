@@ -22,7 +22,7 @@ export const useMessages = (selectedUserId) => {
       setLoading(true);
       setError(null);
       const { data } = await api.get(`/messages/${selectedUserId}`);
-      
+
       const hydratedMessages = data.messages.map(m => {
         const sender = m.senderId?._id || m.senderId;
         if (sender === selectedUserId && m.status !== 'read') {
@@ -43,7 +43,7 @@ export const useMessages = (selectedUserId) => {
   useEffect(() => {
     setMessages([]);
     fetchMessages();
-    
+
     if (selectedUserId) {
       api.put(`/messages/mark-read/${selectedUserId}`).catch(console.error);
     }
@@ -64,7 +64,7 @@ export const useMessages = (selectedUserId) => {
           // Prevent duplicates (in case of same tab optimistic appending)
           const isDuplicate = prev.some((m) => m._id === message._id);
           if (isDuplicate) return prev;
-          
+
           return [...prev, { ...message, status: msgSenderId !== currentUser._id ? 'read' : message.status }];
         });
 

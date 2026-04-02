@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, FileText, Image } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Image, Smile } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
 
@@ -16,8 +17,10 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
   const [sending,        setSending]        = useState(false);
   const [pendingFile,    setPendingFile]    = useState(null);   // { file, previewUrl, isImage }
   const [uploadError,    setUploadError]    = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef  = useRef(null);
   const fileInputRef = useRef(null);
+  const emojiPickerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const { socket } = useSocket();
 
@@ -42,6 +45,34 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
     };
   }, [pendingFile]);
 
+  // Handle outside clicks to close emoji picker
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
+
+  const handleEmojiClick = (emojiObj) => {
+    const cursorPosition = textareaRef.current?.selectionStart || text.length;
+    const newText = text.slice(0, cursorPosition) + emojiObj.emoji + text.slice(textareaRef.current?.selectionEnd || text.length);
+    setText(newText);
+
+    // Set focus and maintain cursor position after React re-render
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newCursorPos = cursorPosition + emojiObj.emoji.length;
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  };
+
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';           // allow re-selecting same file
@@ -64,6 +95,36 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
     if (pendingFile?.previewUrl) URL.revokeObjectURL(pendingFile.previewUrl);
     setPendingFile(null);
     setUploadError('');
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (!file) continue;
+
+        e.preventDefault(); // Stop the default paste into textarea
+        setUploadError('');
+
+        if (file.size > MAX_BYTES) {
+          setUploadError(`File too large (max 50 MB). Pasted: ${formatBytes(file.size)}`);
+          return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        
+        // Browsers often name pasted files just "image.png"
+        const fileName = file.name === 'image.png' ? `pasted-image-${Date.now()}.png` : file.name;
+        const finalFile = new File([file], fileName, { type: file.type });
+
+        setPendingFile({ file: finalFile, previewUrl, isImage: true });
+        textareaRef.current?.focus();
+        break; // Only capture the first image if multiple paste items exist
+      }
+    }
   };
 
   const handleSend = async (e) => {
@@ -117,6 +178,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
 
       onMessageSent(sentMessage);
       setText('');
+      setShowEmojiPicker(false);
       onCancelReply?.();
       textareaRef.current?.focus();
 
@@ -133,7 +195,13 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) { 
+      e.preventDefault(); 
+      handleSend(); 
+    }
+    if (e.key === 'Escape') {
+      setShowEmojiPicker(false);
+    }
   };
 
   const handleTextChange = (e) => {
@@ -190,7 +258,31 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
         />
 
         {/* Attachment button */}
-        <div className="flex gap-1 md:gap-2 mb-1.5 md:mb-2 text-text-muted">
+        <div className="flex gap-1 md:gap-2 mb-1.5 md:mb-2 text-text-muted relative" ref={emojiPickerRef}>
+          {showEmojiPicker && (
+            <div className="absolute bottom-full left-0 mb-4 z-50 animate-slide-up origin-bottom-left shadow-2xl">
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                theme="dark"
+                searchDisabled={false}
+                skinTonesDisabled={true}
+                lazyLoadEmojis={true}
+                width={300}
+                height={400}
+                autoFocusSearch={false}
+              />
+            </div>
+          )}
+          
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker((prev) => !prev)}
+            className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-accent-light bg-accent/10' : 'hover:text-accent-light hover:bg-white/5'}`}
+            title="Add emoji"
+          >
+            <Smile className="w-5 h-5" />
+          </button>
+
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -208,6 +300,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={pendingFile ? 'Add a caption…' : 'Type a message…'}
             rows={1}
             className="w-full bg-transparent text-text-primary px-4 py-3 min-h-[48px] max-h-[120px] resize-none focus:outline-none placeholder:text-text-muted text-sm my-auto custom-scrollbar"
