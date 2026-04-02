@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Smile, Paperclip } from 'lucide-react';
 import api from '../../api/axios';
+import { useSocket } from '../../context/SocketContext';
 
 export default function MessageInput({ receiverId, onMessageSent }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const textareaRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const { socket } = useSocket();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -14,6 +17,12 @@ export default function MessageInput({ receiverId, onMessageSent }) {
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
   }, [text]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
 
   const handleSend = async (e) => {
     e?.preventDefault();
@@ -26,6 +35,9 @@ export default function MessageInput({ receiverId, onMessageSent }) {
       onMessageSent(data.message);
       setText('');
       textareaRef.current?.focus();
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (socket) socket.emit('stopTyping', { receiverId });
     } catch (error) {
       console.error('Failed to send message:', error);
       // Minimal error handling, normally would show a toast here
@@ -38,6 +50,20 @@ export default function MessageInput({ receiverId, onMessageSent }) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+
+    if (socket && receiverId) {
+      socket.emit('typing', { receiverId });
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stopTyping', { receiverId });
+      }, 1500);
     }
   };
 
@@ -59,7 +85,7 @@ export default function MessageInput({ receiverId, onMessageSent }) {
         <textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           rows={1}

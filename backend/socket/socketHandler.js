@@ -46,6 +46,18 @@ const initSocket = (io) => {
       }
     });
 
+    socket.on('typing', ({ receiverId }) => {
+      if (receiverId) {
+        socket.to(receiverId).emit('typing', socket.user._id.toString());
+      }
+    });
+
+    socket.on('stopTyping', ({ receiverId }) => {
+      if (receiverId) {
+        socket.to(receiverId).emit('stopTyping', socket.user._id.toString());
+      }
+    });
+
     socket.on('disconnect', () => {
       // Remove this specific socketId from the user's tracked connections
       const userSockets = onlineUsers.get(userId);
