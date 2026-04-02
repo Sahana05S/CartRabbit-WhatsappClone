@@ -22,7 +22,16 @@ export const useMessages = (selectedUserId) => {
       setLoading(true);
       setError(null);
       const { data } = await api.get(`/messages/${selectedUserId}`);
-      setMessages(data.messages);
+      
+      const hydratedMessages = data.messages.map(m => {
+        const sender = m.senderId?._id || m.senderId;
+        if (sender === selectedUserId && m.status !== 'read') {
+          return { ...m, status: 'read' };
+        }
+        return m;
+      });
+
+      setMessages(hydratedMessages);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load messages.');
     } finally {
@@ -34,7 +43,11 @@ export const useMessages = (selectedUserId) => {
   useEffect(() => {
     setMessages([]);
     fetchMessages();
-  }, [fetchMessages]);
+    
+    if (selectedUserId) {
+      api.put(`/messages/mark-read/${selectedUserId}`).catch(console.error);
+    }
+  }, [fetchMessages, selectedUserId]);
 
   // Socket listener for incoming messages
   useEffect(() => {
@@ -52,17 +65,42 @@ export const useMessages = (selectedUserId) => {
           const isDuplicate = prev.some((m) => m._id === message._id);
           if (isDuplicate) return prev;
           
-          return [...prev, message];
+          return [...prev, { ...message, status: msgSenderId !== currentUser._id ? 'read' : message.status }];
         });
+
+        if (msgSenderId === activeChatId) {
+          api.put(`/messages/mark-read/${msgSenderId}`).catch(console.error);
+        }
       } else {
-        // Message belongs to a different chat, handle separately (e.g. unread count badge)
-        // Future implementation goes here
+        // Message belongs to a different chat, emit delivered
+        if (msgSenderId !== currentUser._id) {
+          socket.emit('messageDelivered', message._id);
+        }
+      }
+    };
+
+    const handleMessageDelivered = (messageId) => {
+      setMessages((prev) => prev.map(m => m._id === messageId ? { ...m, status: 'delivered' } : m));
+    };
+
+    const handleMessagesRead = ({ receiverId }) => {
+      if (receiverId === selectedUserIdRef.current) {
+        setMessages((prev) => prev.map(m => {
+          const mReceiver = m.receiverId?._id || m.receiverId;
+          return mReceiver === receiverId && m.status !== 'read' ? { ...m, status: 'read' } : m;
+        }));
       }
     };
 
     socket.on('newMessage', handleNewMessage);
-    return () => socket.off('newMessage', handleNewMessage);
-  }, [socket]);
+    socket.on('messageDelivered', handleMessageDelivered);
+    socket.on('messagesRead', handleMessagesRead);
+    return () => {
+      socket.off('newMessage', handleNewMessage);
+      socket.off('messageDelivered', handleMessageDelivered);
+      socket.off('messagesRead', handleMessagesRead);
+    };
+  }, [socket, currentUser]);
 
   const addMessage = (message) => {
     setMessages((prev) => {

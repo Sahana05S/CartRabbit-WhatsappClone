@@ -4,7 +4,7 @@ import ChatListItem from './ChatListItem';
 import { Loader2 } from 'lucide-react';
 
 export default function ChatList({ search, selectedUser, onSelectUser }) {
-  const { users, loading, error } = useUsers();
+  const { users, loading, error } = useUsers(selectedUser?._id);
   const { onlineUsers } = useSocket();
 
   if (loading) {

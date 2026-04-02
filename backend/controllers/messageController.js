@@ -56,4 +56,26 @@ const getMessages = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage, getMessages };
+// PUT /api/messages/mark-read/:senderId
+const markMessagesAsRead = async (req, res) => {
+  try {
+    const receiverId = req.user._id;
+    const senderId = req.params.senderId;
+
+    await Message.updateMany(
+      { senderId, receiverId, status: { $ne: 'read' } },
+      { $set: { status: 'read' } }
+    );
+
+    // Emit socket event to sender so their UI updates
+    const io = getIO();
+    io.to(senderId.toString()).emit('messagesRead', { receiverId: receiverId.toString() });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mark as read error:', error);
+    res.status(500).json({ success: false, message: 'Failed to mark messages as read.' });
+  }
+};
+
+module.exports = { sendMessage, getMessages, markMessagesAsRead };

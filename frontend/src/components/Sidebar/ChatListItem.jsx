@@ -35,21 +35,29 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
             {user.username}
           </h3>
           {lastMessage?.createdAt && (
-            <span className="text-[10px] text-text-muted flex-shrink-0 ml-2">
+            <span className={`text-[10px] flex-shrink-0 ml-2 ${user.unreadCount > 0 ? 'text-accent-light font-medium' : 'text-text-muted'}`}>
               {formatPreviewTime(lastMessage.createdAt)}
             </span>
           )}
         </div>
-        <p className="text-xs text-text-muted truncate">
-          {lastMessage ? (
-            <>
-              {isMe && <span className="opacity-70">You: </span>}
-              {lastMessage.text}
-            </>
-          ) : (
-            isOnline ? 'Online' : 'Offline'
+        <div className="flex justify-between items-center gap-2">
+          <p className={`text-xs truncate flex-1 ${user.unreadCount > 0 ? 'text-white' : 'text-text-muted'}`}>
+            {lastMessage ? (
+              <>
+                {isMe && <span className="opacity-70 font-normal">You: </span>}
+                {lastMessage.text}
+              </>
+            ) : (
+              isOnline ? 'Online' : 'Offline'
+            )}
+          </p>
+          
+          {user.unreadCount > 0 && (
+            <span className="flex-shrink-0 bg-accent text-white text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center shadow-sm">
+              {user.unreadCount > 99 ? '99+' : user.unreadCount}
+            </span>
           )}
-        </p>
+        </div>
       </div>
     </button>
   );

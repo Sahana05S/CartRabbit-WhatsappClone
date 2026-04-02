@@ -23,17 +23,25 @@ export default function MessageBubble({ message, isSent }) {
         `}>
           <span>{formatMessageTime(message.createdAt)}</span>
           {isSent && (
-            <svg 
-              className="w-3.5 h-3.5 opacity-80" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2.5" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <span className="flex items-center justify-center">
+              {(!message.status || message.status === 'sent') && (
+                <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
+              {message.status === 'delivered' && (
+                <svg className="w-4 h-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 6 7 17 3 13"></polyline>
+                  <polyline points="22 6 13 17"></polyline>
+                </svg>
+              )}
+              {message.status === 'read' && (
+                <svg className="w-4 h-4 text-blue-400 opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 6 7 17 3 13"></polyline>
+                  <polyline points="22 6 13 17"></polyline>
+                </svg>
+              )}
+            </span>
           )}
         </div>
       </div>

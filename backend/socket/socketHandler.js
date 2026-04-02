@@ -48,6 +48,21 @@ const initSocket = (io) => {
       }
     });
 
+    socket.on('messageDelivered', async (messageId) => {
+      try {
+        const message = await require('../models/Message').findByIdAndUpdate(
+          messageId,
+          { status: 'delivered' },
+          { new: true }
+        );
+        if (message) {
+          socket.to(message.senderId.toString()).emit('messageDelivered', message._id);
+        }
+      } catch (err) {
+        console.error('Delivered status error:', err);
+      }
+    });
+
     socket.on('typing', ({ receiverId }) => {
       if (receiverId) {
         socket.to(receiverId).emit('typing', socket.user._id.toString());
