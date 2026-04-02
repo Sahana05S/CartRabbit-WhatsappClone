@@ -13,6 +13,16 @@ const MessageList = forwardRef(function MessageList({
   const [highlightedId, setHighlightedId] = useState(null);   // for reply-click flash
   const prevActiveIdRef = useRef(null);
 
+  // ID of the last outgoing message that has been read — the only one to show "Seen at"
+  const lastReadMsgId = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      const sid = m.senderId?._id || m.senderId;
+      if (sid === currentUser._id && m.status === 'read') return m._id;
+    }
+    return null;
+  })();
+
   // ── Auto-scroll to bottom on new messages (only when not searching) ──────
   useEffect(() => {
     if (searchActiveId) return;   // don't steal scroll while user is navigating search
@@ -94,6 +104,7 @@ const MessageList = forwardRef(function MessageList({
               isHighlighted={highlightedId === message._id}
               isSearchHit={isSearchHit}
               isSearchActive={isActive}
+              isLastRead={message._id === lastReadMsgId}
               searchQuery={searchQuery}
               onReply={onReply}
               onScrollToReply={scrollToMessage}

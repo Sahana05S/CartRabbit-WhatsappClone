@@ -26,7 +26,7 @@ export const useMessages = (selectedUserId) => {
       const hydratedMessages = data.messages.map(m => {
         const sender = m.senderId?._id || m.senderId;
         if (sender === selectedUserId && m.status !== 'read') {
-          return { ...m, status: 'read' };
+          return { ...m, status: 'read', readAt: m.readAt ?? new Date().toISOString() };
         }
         return m;
       });
@@ -83,11 +83,14 @@ export const useMessages = (selectedUserId) => {
       setMessages((prev) => prev.map(m => m._id === messageId ? { ...m, status: 'delivered' } : m));
     };
 
-    const handleMessagesRead = ({ receiverId }) => {
+    const handleMessagesRead = ({ receiverId, readAt }) => {
       if (receiverId === selectedUserIdRef.current) {
+        const ts = readAt ?? new Date().toISOString();
         setMessages((prev) => prev.map(m => {
           const mReceiver = m.receiverId?._id || m.receiverId;
-          return mReceiver === receiverId && m.status !== 'read' ? { ...m, status: 'read' } : m;
+          return mReceiver === receiverId && m.status !== 'read'
+            ? { ...m, status: 'read', readAt: m.readAt ?? ts }
+            : m;
         }));
       }
     };

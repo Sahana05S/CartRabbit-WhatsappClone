@@ -3,7 +3,7 @@ import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
 import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star } from 'lucide-react';
 
-export default function ChatHeader({ user, searchProps, onOpenStarred }) {
+export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping }) {
   const { onlineUsers, socket } = useSocket();
   const isOnline = onlineUsers.includes(user._id);
   const [lastSeen, setLastSeen] = useState(user.lastSeen);
@@ -70,12 +70,21 @@ export default function ChatHeader({ user, searchProps, onOpenStarred }) {
             <h2 className="text-base font-semibold text-text-primary leading-tight">
               {user.username}
             </h2>
-            <p className="text-xs text-text-muted mt-0.5">
-              {isOnline
-                ? 'online'
-                : lastSeen
-                  ? `last seen ${formatLastSeen(lastSeen)}`
-                  : 'offline'
+            {/* Priority: typing > online > last seen */}
+            <p className={`text-xs mt-0.5 transition-all duration-200 ${
+              isTyping
+                ? 'text-accent-light italic'
+                : isOnline
+                  ? 'text-green-400'
+                  : 'text-text-muted'
+            }`}>
+              {isTyping
+                ? 'typing…'
+                : isOnline
+                  ? 'online'
+                  : lastSeen
+                    ? `last seen ${formatLastSeen(lastSeen)}`
+                    : 'offline'
               }
             </p>
           </div>

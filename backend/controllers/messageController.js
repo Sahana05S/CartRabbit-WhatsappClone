@@ -398,10 +398,39 @@ const getStarredMessages = async (req, res) => {
   }
 };
 
+// GET /api/messages/info/:messageId — full metadata for Message Info panel
+const getMessageById = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId)
+      .populate('senderId',   'username avatarColor')
+      .populate('receiverId', 'username avatarColor');
+
+    if (!message) {
+      return res.status(404).json({ success: false, message: 'Message not found.' });
+    }
+
+    // Only participants may view message info
+    const senderId_   = message.senderId?._id?.toString()   ?? message.senderId?.toString();
+    const receiverId_ = message.receiverId?._id?.toString() ?? message.receiverId?.toString();
+    if (userId.toString() !== senderId_ && userId.toString() !== receiverId_) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    res.json({ success: true, message });
+  } catch (error) {
+    console.error('Get message by id error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch message info.' });
+  }
+};
+
 module.exports = {
   sendMessage, getMessages, markMessagesAsRead,
   reactToMessage, deleteForMe, deleteForEveryone,
   sendAttachment, forwardMessage,
   toggleStar, getStarredMessages,
+  getMessageById,
 };
 

@@ -2,11 +2,12 @@ import { useState, useCallback } from 'react';
 import { formatMessageTime } from '../../utils/formatTime';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { Reply, Trash2, Forward, Copy, Star, Check } from 'lucide-react';
+import { Reply, Trash2, Forward, Copy, Star, Check, Info } from 'lucide-react';
 import DeleteMessageMenu from './DeleteMessageMenu';
 import AttachmentMessage from './AttachmentMessage';
 import HighlightText from './HighlightText';
 import ForwardModal from './ForwardModal';
+import MessageInfoPanel from './MessageInfoPanel';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -16,6 +17,9 @@ export default function MessageBubble({
   isHighlighted,
   isSearchHit,
   isSearchActive,
+  // isLastRead retained in signature for future Message Info panel usage
+  // eslint-disable-next-line no-unused-vars
+  isLastRead,
   searchQuery,
   onReply,
   onScrollToReply,
@@ -27,6 +31,7 @@ export default function MessageBubble({
   const [showPicker,     setShowPicker]     = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showForward,    setShowForward]    = useState(false);
+  const [showInfo,       setShowInfo]       = useState(false);
   const [copied,         setCopied]         = useState(false);
   const [starLoading,    setStarLoading]    = useState(false);
 
@@ -210,23 +215,27 @@ export default function MessageBubble({
               <span>{formatMessageTime(message.createdAt)}</span>
               {isSent && (
                 <span className="flex items-center justify-center">
+                  {/* Single tick — sent */}
                   {(!message.status || message.status === 'sent') && (
                     <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   )}
+                  {/* Double tick gray — delivered */}
                   {message.status === 'delivered' && (
                     <svg className="w-4 h-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="16 6 7 17 3 13"></polyline>
                       <polyline points="22 6 13 17"></polyline>
                     </svg>
                   )}
+                  {/* Double tick blue — read */}
                   {message.status === 'read' && (
                     <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="16 6 7 17 3 13"></polyline>
                       <polyline points="22 6 13 17"></polyline>
                     </svg>
                   )}
+                  {/* readAt is stored in message state — available for a future Message Info panel */}
                 </span>
               )}
             </div>
@@ -291,6 +300,17 @@ export default function MessageBubble({
               </button>
             )}
 
+            {/* Info — only for sent messages */}
+            {isSent && !message.isDeletedForEveryone && (
+              <button
+                onClick={() => setShowInfo(true)}
+                className="text-text-muted hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-400/10 transition-colors"
+                title="Message info"
+              >
+                <Info className="w-[17px] h-[17px]" />
+              </button>
+            )}
+
             <button onClick={() => setShowDeleteMenu(true)} className="text-text-muted hover:text-red-400 p-1.5 rounded-full hover:bg-red-500/10 transition-colors" title="Delete">
               <Trash2 className="w-[17px] h-[17px]" />
             </button>
@@ -312,6 +332,11 @@ export default function MessageBubble({
       {/* Forward modal */}
       {showForward && (
         <ForwardModal message={message} onClose={() => setShowForward(false)} />
+      )}
+
+      {/* Message Info panel */}
+      {showInfo && (
+        <MessageInfoPanel messageId={message._id} onClose={() => setShowInfo(false)} />
       )}
     </>
   );
