@@ -2,36 +2,27 @@ import { useState } from 'react';
 import { useUsers } from '../../hooks/useUsers';
 import { useSocket } from '../../context/SocketContext';
 import ChatListItem from './ChatListItem';
-import { Loader2, ArchiveRestore, ArrowLeft } from 'lucide-react';
+import { ArchiveRestore, ArrowLeft, Users, SearchX, Archive } from 'lucide-react';
+import EmptyState from '../ui/EmptyState';
+import LoadingState from '../ui/LoadingState';
+import ErrorState from '../ui/ErrorState';
 
 export default function ChatList({ search, selectedUser, onSelectUser }) {
   const { users, loading, error, togglePinChat, toggleArchiveChat } = useUsers(selectedUser?._id);
   const { onlineUsers } = useSocket();
   const [showArchived, setShowArchived] = useState(false);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-accent-light" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="text-red-400 text-sm text-center p-4">{error}</div>;
-  }
-
-  if (users.length === 0) {
-    return (
-      <div className="text-center p-6 text-text-muted text-sm">
-        No other users found. Invite some friends!
-      </div>
-    );
-  }
+  if (loading) return <LoadingState type="chat-list" />;
+  if (error) return <ErrorState message={error} compact />;
+  if (users.length === 0) return <EmptyState icon={Users} title="No chats" description="Invite some friends to get started!" />;
 
   const filtered = users.filter((u) =>
     u.username.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (filtered.length === 0 && search) {
+    return <EmptyState icon={SearchX} title="No results found" description={`No chats matching "${search}"`} />;
+  }
 
   const pinned = filtered.filter(u => u.isPinned && !u.isArchived);
   const normal = filtered.filter(u => !u.isPinned && !u.isArchived);
@@ -49,7 +40,7 @@ export default function ChatList({ search, selectedUser, onSelectUser }) {
             <span className="font-semibold">Archived Chats</span>
           </button>
           {archived.length === 0 && (
-            <div className="p-6 text-center text-sm text-text-muted">No archived chats</div>
+            <EmptyState icon={Archive} title="No archived chats" />
           )}
           {archived.map((user) => (
             <ChatListItem

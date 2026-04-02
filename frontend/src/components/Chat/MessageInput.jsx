@@ -86,8 +86,9 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
     }
 
     const isImage     = file.type.startsWith('image/');
-    const previewUrl  = isImage ? URL.createObjectURL(file) : null;
-    setPendingFile({ file, previewUrl, isImage });
+    const isVideo     = file.type.startsWith('video/');
+    const previewUrl  = (isImage || isVideo) ? URL.createObjectURL(file) : null;
+    setPendingFile({ file, previewUrl, isImage, isVideo });
     textareaRef.current?.focus();
   };
 
@@ -223,6 +224,15 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
         <div className="mx-3 md:mx-6 mt-3 flex items-center gap-3 bg-bg-secondary border border-border rounded-xl px-3 py-2 animate-slide-up">
           {pendingFile.isImage ? (
             <img src={pendingFile.previewUrl} alt="preview" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+          ) : pendingFile.isVideo ? (
+            <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-black">
+              <video src={pendingFile.previewUrl} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-4 h-4 rounded-full bg-white/80 flex items-center justify-center">
+                  <span className="block w-0 h-0 border-t-[4px] border-t-transparent border-l-[6px] border-l-gray-800 border-b-[4px] border-b-transparent ml-0.5" />
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center flex-shrink-0">
               <FileText className="w-5 h-5 text-accent-light" />
@@ -253,7 +263,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
           onChange={handleFileSelect}
         />
 

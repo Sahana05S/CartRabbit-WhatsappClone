@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { X, Check, CheckCheck, Forward, Star, Reply, Paperclip, ImageIcon, Loader2 } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import LoadingState from '../ui/LoadingState';
+import ErrorState from '../ui/ErrorState';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,23 +54,22 @@ export default function MessageInfoPanel({ messageId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const { data } = await api.get(`/messages/info/${messageId}`);
-        if (!cancelled) setInfo(data.message);
-      } catch (err) {
-        if (!cancelled) setError(err.response?.data?.message || 'Failed to load message info.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
+  const loadInfo = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { data } = await api.get(`/messages/info/${messageId}`);
+      setInfo(data.message);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load message info.');
+    } finally {
+      setLoading(false);
+    }
   }, [messageId]);
+
+  useEffect(() => {
+    loadInfo();
+  }, [loadInfo]);
 
   // Close on Escape
   useEffect(() => {
@@ -113,15 +114,14 @@ export default function MessageInfoPanel({ messageId, onClose }) {
         <div className="flex-1 overflow-y-auto custom-scrollbar px-5 py-4 space-y-5">
 
           {loading && (
-            <div className="flex flex-col items-center justify-center h-48 gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-accent-light" />
-              <span className="text-sm text-text-muted">Loading…</span>
+            <div className="py-20">
+              <LoadingState />
             </div>
           )}
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4 text-sm text-center">
-              {error}
+            <div className="py-10">
+              <ErrorState message={error} onRetry={loadInfo} />
             </div>
           )}
 

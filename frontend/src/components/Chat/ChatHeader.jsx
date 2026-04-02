@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
-import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star } from 'lucide-react';
+import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star, Images } from 'lucide-react';
 
-export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping }) {
+export default function ChatHeader({ user, searchProps, onOpenStarred, isGalleryOpen, onOpenGallery, isTyping }) {
   const { onlineUsers, socket } = useSocket();
   const isOnline = onlineUsers.includes(user._id);
   const [lastSeen, setLastSeen] = useState(user.lastSeen);
@@ -113,6 +113,17 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping 
             title="Starred messages"
           >
             <Star className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onOpenGallery}
+            className={`p-2 rounded-full transition-colors ${
+              isGalleryOpen
+                ? 'text-accent-light bg-accent/10'
+                : 'text-text-muted hover:text-text-primary hover:bg-white/5'
+            }`}
+            title="Media, Links, Docs"
+          >
+            <Images className="w-5 h-5" />
           </button>
           <button className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors">
             <MoreVertical className="w-5 h-5" />

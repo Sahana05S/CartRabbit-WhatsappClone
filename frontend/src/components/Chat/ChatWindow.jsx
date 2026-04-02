@@ -5,6 +5,7 @@ import MessageInput from './MessageInput';
 import ReplyPreview from './ReplyPreview';
 import EmptyChatState from './EmptyChatState';
 import StarredMessagesPanel from './StarredMessagesPanel';
+import MediaGalleryPanel from './MediaGalleryPanel';
 import { useMessages } from '../../hooks/useMessages';
 import { useSearch } from '../../hooks/useSearch';
 import { useSocket } from '../../context/SocketContext';
@@ -17,16 +18,18 @@ export default function ChatWindow({ selectedUser }) {
   const [isTyping, setIsTyping] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [isStarredOpen, setIsStarredOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const messageListRef = useRef(null);
 
   // Search state — all logic lives in the hook
   const search = useSearch(messages);
 
-  // Clear reply + search + starred state when chat changes
+  // Clear reply + search + starred + gallery state when chat changes
   useEffect(() => {
     setIsTyping(false);
     setReplyTo(null);
     setIsStarredOpen(false);
+    setIsGalleryOpen(false);
     search.closeSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser?._id]);
@@ -75,7 +78,14 @@ export default function ChatWindow({ selectedUser }) {
     <div className="flex-1 flex overflow-hidden">
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col h-full bg-bg-primary relative min-w-0">
-        <ChatHeader user={selectedUser} searchProps={search} onOpenStarred={() => setIsStarredOpen(true)} isTyping={isTyping} />
+        <ChatHeader
+          user={selectedUser}
+          searchProps={search}
+          onOpenStarred={() => { setIsStarredOpen(true);  setIsGalleryOpen(false); }}
+          isGalleryOpen={isGalleryOpen}
+          onOpenGallery={() => { setIsGalleryOpen(v => !v); setIsStarredOpen(false); }}
+          isTyping={isTyping}
+        />
 
         {/* Messages area */}
         <div
@@ -131,6 +141,14 @@ export default function ChatWindow({ selectedUser }) {
             messageListRef.current?.scrollToMessage(msgId);
           }}
           onUnstarMessage={(msgId) => handleStarToggle(msgId, false)}
+        />
+      )}
+
+      {/* Media Gallery Panel */}
+      {isGalleryOpen && (
+        <MediaGalleryPanel
+          chatId={selectedUser._id}
+          onClose={() => setIsGalleryOpen(false)}
         />
       )}
     </div>

@@ -398,6 +398,65 @@ const getStarredMessages = async (req, res) => {
   }
 };
 
+// GET /api/messages/media/:userId — paginated media (images / videos / files)
+const getMediaMessages = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { userId: otherId } = req.params;
+    const { type = 'image', page = 1, limit = 24 } = req.query;
+
+    const pageNum  = Math.max(1, parseInt(page,  10) || 1);
+    const limitNum = Math.min(50, parseInt(limit, 10) || 24);
+    const skip     = (pageNum - 1) * limitNum;
+
+    // Base query — only messages between these two users that have an attachment
+    const base = {
+      $or: [
+        { senderId: userId, receiverId: otherId },
+        { senderId: otherId, receiverId: userId },
+      ],
+      deletedFor:           { $ne: userId },
+      isDeletedForEveryone: false,
+      'attachment.fileUrl': { $ne: null },
+    };
+
+    // Type-specific filter
+    if (type === 'image') {
+      base.messageType = 'image';
+    } else if (type === 'video') {
+      // Videos are stored as 'file' with a video/* mimeType
+      base.messageType = 'file';
+      base['attachment.mimeType'] = /^video\//;
+    } else {
+      // Files = non-image, non-video files
+      base.messageType = 'file';
+      base['attachment.mimeType'] = { $not: /^video\// };
+    }
+
+    const [messages, totalCount] = await Promise.all([
+      Message.find(base)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate('senderId',   'username avatarColor')
+        .populate('receiverId', 'username avatarColor')
+        .lean(),
+      Message.countDocuments(base),
+    ]);
+
+    res.json({
+      success:    true,
+      messages,
+      page:       pageNum,
+      totalPages: Math.ceil(totalCount / limitNum),
+      totalCount,
+    });
+  } catch (error) {
+    console.error('Get media messages error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch media.' });
+  }
+};
+
 // GET /api/messages/info/:messageId — full metadata for Message Info panel
 const getMessageById = async (req, res) => {
   try {
@@ -432,5 +491,6 @@ module.exports = {
   sendAttachment, forwardMessage,
   toggleStar, getStarredMessages,
   getMessageById,
+  getMediaMessages,
 };
 

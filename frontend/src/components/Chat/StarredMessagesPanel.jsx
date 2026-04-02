@@ -1,38 +1,40 @@
-import { useState, useEffect } from 'react';
-import { X, Loader2, ArrowRight, StarOff } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Loader2, ArrowRight, StarOff, Star } from 'lucide-react';
 import api from '../../api/axios';
 import { formatPreviewTime } from '../../utils/formatTime';
 import HighlightText from './HighlightText';
+import EmptyState from '../ui/EmptyState';
+import LoadingState from '../ui/LoadingState';
+import ErrorState from '../ui/ErrorState';
 
 export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessage, onUnstarMessage }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const loadMessages = useCallback(async (mounted = true) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get(`/messages/starred?chatId=${chatId}`);
+      if (mounted) {
+        setMessages(res.data.messages || []);
+      }
+    } catch (err) {
+      if (mounted) {
+        setError('Failed to load starred messages.');
+        console.error(err);
+      }
+    } finally {
+      if (mounted) setLoading(false);
+    }
+  }, [chatId]);
+
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-    api.get(`/messages/starred?chatId=${chatId}`)
-      .then((res) => {
-        if (mounted) {
-          setMessages(res.data.messages || []);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError('Failed to load starred messages.');
-          console.error(err);
-        }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [chatId]);
+    loadMessages(mounted);
+    return () => { mounted = false; };
+  }, [loadMessages]);
 
   const handleUnstar = async (e, messageId) => {
     e.stopPropagation(); // prevent scrolling to message
@@ -64,21 +66,19 @@ export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessag
       {/* Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-accent-light" />
+          <div className="py-20">
+            <LoadingState />
           </div>
         ) : error ? (
-          <div className="text-center text-sm text-red-400 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-            {error}
+          <div className="py-10">
+            <ErrorState message={error} onRetry={() => loadMessages()} />
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-text-muted p-8 text-sm flex flex-col items-center">
-            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
-              <span className="text-xl opacity-60">⭐</span>
-            </div>
-            <p>No starred messages</p>
-            <p className="text-[11px] mt-1 opacity-70">Star messages to find them easily here.</p>
-          </div>
+          <EmptyState
+            icon={Star}
+            title="No starred messages"
+            description="Star messages to find them easily here."
+          />
         ) : (
           messages.map((message) => {
             const isText = !message.messageType || message.messageType === 'text';

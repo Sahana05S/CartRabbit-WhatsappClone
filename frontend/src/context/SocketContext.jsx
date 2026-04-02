@@ -8,8 +8,9 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export const SocketProvider = ({ children }) => {
   const { currentUser } = useAuth();
-  const socketRef = useRef(null);
-  const [onlineUsers, setOnlineUsers] = useState([]);
+  const socketRef   = useRef(null);
+  const [onlineUsers,  setOnlineUsers]  = useState([]);
+  const [isConnected, setIsConnected]  = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -34,6 +35,11 @@ export const SocketProvider = ({ children }) => {
 
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id);
+      setIsConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
     });
 
     socket.on('onlineUsers', (users) => {
@@ -42,6 +48,7 @@ export const SocketProvider = ({ children }) => {
 
     socket.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
+      setIsConnected(false);
     });
 
     socketRef.current = socket;
@@ -49,11 +56,12 @@ export const SocketProvider = ({ children }) => {
     return () => {
       socket.disconnect();
       socketRef.current = null;
+      setIsConnected(false);
     };
   }, [currentUser]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, onlineUsers }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, onlineUsers, isConnected }}>
       {children}
     </SocketContext.Provider>
   );

@@ -6,14 +6,16 @@ const {
   sendAttachment, forwardMessage,
   toggleStar, getStarredMessages,
   getMessageById,
+  getMediaMessages,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
-const upload    = require('../middleware/uploadMiddleware');
+const { upload, multerErrorHandler } = require('../middleware/uploadMiddleware');
 
 router.post('/',                            protect, sendMessage);
-router.post('/attachment',                  protect, upload.single('file'), sendAttachment);
+router.post('/attachment',                  protect, upload.single('file'), multerErrorHandler, sendAttachment);
 router.get('/starred',                      protect, getStarredMessages);   // must be before /:userId
 router.get('/info/:messageId',              protect, getMessageById);        // message info panel
+router.get('/media/:userId',                protect, getMediaMessages);      // media gallery
 router.get('/:userId',                      protect, getMessages);
 router.put('/mark-read/:senderId',          protect, markMessagesAsRead);
 router.post('/:messageId/react',           protect, reactToMessage);
