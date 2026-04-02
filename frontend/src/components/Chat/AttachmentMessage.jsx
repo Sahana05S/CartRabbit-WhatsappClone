@@ -22,7 +22,7 @@ function ImageAttachment({ attachment, isSent }) {
     <>
       <div className="relative group/img cursor-pointer rounded-xl overflow-hidden max-w-[260px]" onClick={() => setLightbox(true)}>
         {imgError ? (
-          <div className={`flex items-center gap-2 p-3 rounded-xl text-[13px] ${isSent ? 'bg-white/10 text-white/70' : 'bg-bg-panel text-text-muted'}`}>
+          <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isSent ? 'bg-bubble-out border-border' : 'bg-bg-secondary border-border'}`}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             Image unavailable
           </div>
@@ -79,7 +79,7 @@ function FileAttachment({ attachment, isSent }) {
       rel="noopener noreferrer"
       download={attachment.fileName}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl max-w-[260px] transition-opacity hover:opacity-80
-        ${isSent ? 'bg-white/10' : 'bg-bg-panel/80 border border-white/[0.06]'}
+        ${isSent ? 'bg-white/10' : 'bg-bg-secondary border border-border'}
       `}
     >
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isSent ? 'bg-white/20' : 'bg-accent/20'}`}>

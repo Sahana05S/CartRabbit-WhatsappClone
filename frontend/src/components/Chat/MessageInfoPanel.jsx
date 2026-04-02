@@ -32,7 +32,7 @@ const formatInfoTime = (dateString) => {
 
 function InfoRow({ icon: Icon, iconClass = 'text-text-muted', label, value, valueMuted = false }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-white/[0.05] last:border-b-0">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
       <div className="flex items-center gap-3">
         <Icon className={`w-4 h-4 flex-shrink-0 ${iconClass}`} />
         <span className="text-sm text-text-secondary">{label}</span>
@@ -95,11 +95,11 @@ export default function MessageInfoPanel({ messageId, onClose }) {
 
       {/* Panel — slides in from the right */}
       <aside
-        className="fixed right-0 top-0 h-full w-full max-w-sm z-50 bg-bg-panel border-l border-white/[0.06] flex flex-col shadow-2xl animate-slide-in-right"
+        className="fixed right-0 top-0 h-full w-full max-w-sm z-50 bg-bg-panel border-l border-border flex flex-col shadow-2xl animate-slide-in-right"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="h-[72px] px-5 flex items-center gap-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="h-[72px] px-5 flex items-center gap-4 border-b border-border flex-shrink-0">
           <button
             onClick={onClose}
             className="p-2 rounded-full text-text-muted hover:text-text-primary hover:bg-white/5 transition-colors"
@@ -130,8 +130,8 @@ export default function MessageInfoPanel({ messageId, onClose }) {
               {/* ── Message preview ── */}
               <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed break-words
                 ${isSent
-                  ? 'bg-accent text-white rounded-br-[4px] ml-auto max-w-[85%]'
-                  : 'bg-surface text-text-primary border border-white/[0.04] rounded-bl-[4px] max-w-[85%]'
+                  ? 'bg-bubble-out text-text-primary rounded-br-[4px] ml-auto max-w-[85%]'
+                  : 'bg-bubble-in text-text-primary border border-border rounded-bl-[4px] max-w-[85%]'
                 }
               `}>
                 {isDeleted ? (
@@ -156,7 +156,7 @@ export default function MessageInfoPanel({ messageId, onClose }) {
                 <p className="text-[11px] uppercase tracking-wider text-text-muted font-semibold mb-1 px-1">
                   Delivery
                 </p>
-                <div className="bg-surface/60 border border-white/[0.05] rounded-xl px-4 divide-y divide-white/[0.05]">
+                <div className="bg-bg-secondary border border-border rounded-xl px-4 divide-y divide-border">
 
                   {/* Sent */}
                   <InfoRow
@@ -194,7 +194,7 @@ export default function MessageInfoPanel({ messageId, onClose }) {
                 <p className="text-[11px] uppercase tracking-wider text-text-muted font-semibold mb-1 px-1">
                   Details
                 </p>
-                <div className="bg-surface/60 border border-white/[0.05] rounded-xl px-4 divide-y divide-white/[0.05]">
+                <div className="bg-bg-secondary border border-border rounded-xl px-4 divide-y divide-border">
 
                   <InfoRow
                     icon={Star}
@@ -221,7 +221,7 @@ export default function MessageInfoPanel({ messageId, onClose }) {
                   <p className="text-[11px] uppercase tracking-wider text-text-muted font-semibold mb-1 px-1">
                     Replying to
                   </p>
-                  <div className="bg-surface/60 border border-white/[0.05] rounded-xl px-4 py-3 flex items-start gap-3">
+                  <div className="bg-bg-secondary border border-border rounded-xl px-4 py-3 flex items-start gap-3">
                     <Reply className="w-4 h-4 text-accent-light flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <p className="text-[11px] font-semibold text-accent-light mb-0.5 truncate">

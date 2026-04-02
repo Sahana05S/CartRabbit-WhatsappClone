@@ -216,11 +216,11 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
   const canSend = (text.trim() || pendingFile) && !sending;
 
   return (
-    <div className="bg-bg-panel/60 backdrop-blur-md border-t border-white/[0.04] relative z-10">
+    <div className="bg-bg-secondary border-t border-border relative z-10 transition-colors">
 
       {/* File preview strip */}
       {pendingFile && (
-        <div className="mx-3 md:mx-6 mt-3 flex items-center gap-3 bg-bg-secondary border border-white/[0.06] rounded-xl px-3 py-2 animate-slide-up">
+        <div className="mx-3 md:mx-6 mt-3 flex items-center gap-3 bg-bg-secondary border border-border rounded-xl px-3 py-2 animate-slide-up">
           {pendingFile.isImage ? (
             <img src={pendingFile.previewUrl} alt="preview" className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
           ) : (
@@ -294,7 +294,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
         </div>
 
         {/* Text area */}
-        <div className="flex-1 bg-bg-secondary rounded-2xl flex items-center border border-white/[0.06] focus-within:border-accent/30 focus-within:ring-1 focus-within:ring-accent/20 transition-all shadow-sm relative">
+        <div className="flex-1 bg-bg-active rounded-xl flex items-center border border-transparent focus-within:border-border transition-all relative">
           <textarea
             ref={textareaRef}
             value={text}

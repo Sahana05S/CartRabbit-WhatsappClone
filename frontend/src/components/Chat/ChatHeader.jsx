@@ -50,19 +50,19 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping 
     : noResults ? 'No results' : '';
 
   return (
-    <header className="border-b border-white/[0.04] bg-bg-panel/40 backdrop-blur-md sticky top-0 z-10">
+    <header className="border-b border-border bg-bg-secondary sticky top-0 z-10 transition-colors">
       {/* Main header row */}
       <div className="h-[72px] px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div
               className="avatar w-10 h-10 shadow-sm"
-              style={{ backgroundColor: user.avatarColor || '#3b82f6' }}
+              style={{ backgroundColor: user.avatarColor || 'var(--accent-default)' }}
             >
               {getInitials(user.username)}
             </div>
             {isOnline && (
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#161d2e] rounded-full" />
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-bg-panel rounded-full" />
             )}
           </div>
 
@@ -75,7 +75,7 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping 
               isTyping
                 ? 'text-accent-light italic'
                 : isOnline
-                  ? 'text-green-400'
+                  ? 'text-accent'
                   : 'text-text-muted'
             }`}>
               {isTyping
@@ -124,7 +124,7 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isTyping 
       {isOpen && (
         <div className="px-4 pb-3 flex items-center gap-2 animate-slide-up">
           {/* Search input */}
-          <div className="flex-1 flex items-center gap-2 bg-bg-secondary border border-white/[0.06] focus-within:border-accent/40 focus-within:ring-1 focus-within:ring-accent/20 rounded-xl px-3 py-2 transition-all">
+          <div className="flex-1 flex items-center gap-2 bg-bg-panel border border-transparent focus-within:border-border rounded-xl px-3 py-2 transition-all">
             <Search className="w-4 h-4 text-text-muted flex-shrink-0" />
             <input
               ref={searchInputRef}

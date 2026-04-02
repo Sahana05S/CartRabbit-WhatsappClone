@@ -70,10 +70,10 @@ export default function AuthPage() {
         </div>
 
         {/* Auth card */}
-        <div className="glass rounded-2xl p-8 shadow-panel">
+        <div className="bg-bg-panel border border-border rounded-2xl p-8 shadow-xl">
 
           {/* Mode tabs */}
-          <div className="flex bg-bg-primary/60 rounded-xl p-1 mb-7 gap-1">
+          <div className="flex bg-bg-primary opacity-80 rounded-xl p-1 mb-7 gap-1">
             {[['login', 'Sign In'], ['register', 'Sign Up']].map(([tab, label]) => (
               <button
                 key={tab}

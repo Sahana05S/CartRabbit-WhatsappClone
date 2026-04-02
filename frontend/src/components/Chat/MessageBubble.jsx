@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { formatMessageTime } from '../../utils/formatTime';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +34,15 @@ export default function MessageBubble({
   const [showInfo,       setShowInfo]       = useState(false);
   const [copied,         setCopied]         = useState(false);
   const [starLoading,    setStarLoading]    = useState(false);
+  const [contextMenu,    setContextMenu]    = useState(null);
+
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    if (contextMenu) {
+      document.addEventListener('click', handleClick);
+    }
+    return () => document.removeEventListener('click', handleClick);
+  }, [contextMenu]);
 
   // ─── Derived state ────────────────────────────────────────────────────────
   const isStarred  = (message.starredBy || []).includes(currentUser?._id) ||
@@ -112,8 +121,8 @@ export default function MessageBubble({
       >
         <div className={`rounded-2xl px-4 py-2.5 flex items-center gap-2 border
           ${isSent
-            ? 'bg-accent/20 border-accent/20 text-white/40 rounded-br-[4px]'
-            : 'bg-surface/50 border-white/[0.04] text-text-muted rounded-bl-[4px]'
+            ? 'bg-bubble-out border-border text-text-muted opacity-60 rounded-br-[4px]'
+            : 'bg-bubble-in border-border text-text-muted opacity-80 rounded-bl-[4px]'
           }
         `}>
           <Trash2 className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
@@ -132,8 +141,8 @@ export default function MessageBubble({
       <div
         id={`msg-${message._id}`}
         className={`flex w-full ${
-          isSent ? 'justify-end animate-slide-up-right' : 'justify-start animate-slide-up-left'
-        } group/bubble mb-2 relative rounded-xl transition-colors duration-200 ${
+          isSent ? 'justify-end' : 'justify-start'
+        } group/bubble mb-1 relative rounded-xl transition-colors duration-200 ${
           isHighlighted   ? 'animate-highlight-flash' : ''
         } ${
           isSearchActive  ? 'ring-2 ring-accent/60 ring-offset-1 ring-offset-bg-primary rounded-2xl' : ''
@@ -154,16 +163,21 @@ export default function MessageBubble({
           )}
 
           {/* Message Bubble */}
-          <div className={`max-w-[85vw] md:max-w-md rounded-2xl px-4 py-2.5 relative shadow-sm transition-all
+          <div 
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY });
+            }}
+            className={`max-w-[85vw] md:max-w-md rounded-lg px-4 py-2.5 relative transition-all
             ${isSent
-              ? 'bg-accent text-white rounded-br-[4px]'
-              : 'bg-surface text-text-primary border border-white/[0.04] rounded-bl-[4px]'
+              ? 'bg-bubble-out text-text-primary rounded-br-[4px]'
+              : 'bg-bubble-in text-text-primary border border-border rounded-bl-[4px]'
             }
           `}>
 
             {/* Forwarded label */}
             {message.isForwarded && (
-              <div className={`flex items-center gap-1 mb-1.5 ${isSent ? 'text-white/50' : 'text-text-muted'}`}>
+              <div className="flex items-center gap-1 mb-1.5 text-text-muted">
                 <Forward className="w-3 h-3" />
                 <span className="text-[11px] italic">Forwarded</span>
               </div>
@@ -185,13 +199,13 @@ export default function MessageBubble({
                 <button
                   onClick={() => rt.messageId && onScrollToReply?.(rt.messageId.toString())}
                   className={`w-full text-left mb-2 rounded-lg overflow-hidden border-l-[3px] px-3 py-1.5 block transition-opacity hover:opacity-80
-                    ${isSent ? 'border-white/50 bg-white/10' : 'border-accent/70 bg-accent/10'}
+                    ${isSent ? 'border-accent-dark bg-black/5' : 'border-accent-light bg-black/5'}
                   `}
                 >
-                  <p className={`text-[11px] font-semibold mb-0.5 truncate ${isSent ? 'text-white/80' : 'text-accent-light'}`}>
+                  <p className={`text-[11px] font-semibold mb-0.5 truncate ${isSent ? 'text-text-primary' : 'text-accent-light'}`}>
                     {rt.senderName || 'Unknown'}
                   </p>
-                  <p className={`text-[12px] truncate ${isSent ? 'text-white/70' : 'text-text-secondary'}`}>
+                  <p className="text-[12px] truncate text-text-secondary">
                     {isRtText ? (truncated || 'Message') : mediaLabel}
                   </p>
                 </button>
@@ -207,7 +221,7 @@ export default function MessageBubble({
             }
 
             {/* Time + read receipts + star indicator */}
-            <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${isSent ? 'text-white/70' : 'text-text-muted'}`}>
+            <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${isSent ? 'text-text-muted' : 'text-text-muted'}`}>
               {/* Star indicator — only visible when starred */}
               {isStarred && (
                 <Star className={`w-3 h-3 fill-current ${isSent ? 'text-yellow-300/80' : 'text-yellow-400/80'}`} />
@@ -255,66 +269,34 @@ export default function MessageBubble({
             )}
           </div>
 
-          {/* Hover action toolbar: Reply | React | Copy | Star | Forward | Delete */}
-          <div className="hidden group-hover/bubble:flex flex-col items-center gap-1 transition-opacity opacity-0 group-hover/bubble:opacity-100">
-
-            <button onClick={() => onReply?.(message)} className="text-text-muted hover:text-text-primary p-1.5 rounded-full hover:bg-bg-hover transition-colors" title="Reply">
-              <Reply className="w-[17px] h-[17px]" />
-            </button>
-
-            <button onClick={() => setShowPicker(!showPicker)} className="text-text-muted hover:text-text-primary p-1.5 rounded-full hover:bg-bg-hover transition-colors" title="React">
-              <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-
-            {/* Copy — only for text/captioned messages */}
-            {copyText && (
-              <button
-                onClick={handleCopy}
-                className={`p-1.5 rounded-full transition-colors ${copied ? 'text-green-400 bg-green-400/10' : 'text-text-muted hover:text-text-primary hover:bg-bg-hover'}`}
-                title={copied ? 'Copied!' : 'Copy text'}
-              >
-                {copied ? <Check className="w-[17px] h-[17px]" /> : <Copy className="w-[17px] h-[17px]" />}
-              </button>
-            )}
-
-            {/* Star / Unstar */}
-            <button
-              onClick={handleStar}
-              disabled={starLoading}
-              className={`p-1.5 rounded-full transition-colors ${
-                isStarred
-                  ? 'text-yellow-400 hover:text-yellow-300 hover:bg-yellow-400/10'
-                  : 'text-text-muted hover:text-yellow-400 hover:bg-yellow-400/10'
-              } disabled:opacity-50`}
-              title={isStarred ? 'Unstar' : 'Star'}
+          {/* Context Menu Modal placed absolutely based on coordinates */}
+          {contextMenu && (
+            <div
+              className="fixed z-50 min-w-[200px] bg-bg-panel border border-border rounded-lg shadow-xl py-1"
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <Star className={`w-[17px] h-[17px] ${isStarred ? 'fill-current' : ''}`} />
-            </button>
+              <button onClick={() => { onReply?.(message); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Reply <Reply className="w-[15px] h-[15px] text-text-muted" /></button>
+              
+              <button onClick={() => { setShowPicker(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">React <svg className="w-[15px] h-[15px] text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+              
+              {copyText && (
+                <button onClick={() => { handleCopy(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Copy <Copy className="w-[15px] h-[15px] text-text-muted" /></button>
+              )}
 
-            {/* Forward */}
-            {!message.isDeletedForEveryone && (
-              <button onClick={() => setShowForward(true)} className="text-text-muted hover:text-text-primary p-1.5 rounded-full hover:bg-bg-hover transition-colors" title="Forward">
-                <Forward className="w-[17px] h-[17px]" />
-              </button>
-            )}
+              <button onClick={() => { handleStar(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">{isStarred ? 'Unstar' : 'Star'} <Star className={`w-[15px] h-[15px] ${isStarred ? 'text-yellow-400 fill-current' : 'text-text-muted'}`} /></button>
 
-            {/* Info — only for sent messages */}
-            {isSent && !message.isDeletedForEveryone && (
-              <button
-                onClick={() => setShowInfo(true)}
-                className="text-text-muted hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-400/10 transition-colors"
-                title="Message info"
-              >
-                <Info className="w-[17px] h-[17px]" />
-              </button>
-            )}
+              {!message.isDeletedForEveryone && (
+                <button onClick={() => { setShowForward(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Forward <Forward className="w-[15px] h-[15px] text-text-muted" /></button>
+              )}
 
-            <button onClick={() => setShowDeleteMenu(true)} className="text-text-muted hover:text-red-400 p-1.5 rounded-full hover:bg-red-500/10 transition-colors" title="Delete">
-              <Trash2 className="w-[17px] h-[17px]" />
-            </button>
-          </div>
+              {isSent && !message.isDeletedForEveryone && (
+                <button onClick={() => { setShowInfo(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Message info <Info className="w-[15px] h-[15px] text-text-muted" /></button>
+              )}
+              
+              <button onClick={() => { setShowDeleteMenu(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-red-500 transition-colors flex items-center justify-between">Delete <Trash2 className="w-[15px] h-[15px] text-red-400" /></button>
+            </div>
+          )}
 
         </div>
       </div>

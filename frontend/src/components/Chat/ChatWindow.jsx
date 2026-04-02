@@ -74,14 +74,13 @@ export default function ChatWindow({ selectedUser }) {
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col h-full bg-[#0b0f19] relative min-w-0">
+      <main className="flex-1 flex flex-col h-full bg-bg-primary relative min-w-0">
         <ChatHeader user={selectedUser} searchProps={search} onOpenStarred={() => setIsStarredOpen(true)} isTyping={isTyping} />
 
         {/* Messages area */}
         <div
           key={selectedUser._id}
           className="flex-1 overflow-hidden relative animate-fade-in"
-          style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.03) 0%, transparent 50%)' }}
         >
           <MessageList
             ref={messageListRef}

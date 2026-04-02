@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { LogOut, MessageCircle, Search } from 'lucide-react';
+import { LogOut, MessageCircle, Search, Sun, Moon, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { getInitials } from '../../utils/formatTime';
 import ChatList from './ChatList';
 
 export default function Sidebar({ selectedUser, onSelectUser }) {
   const { currentUser, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [search, setSearch] = useState('');
 
   return (
-    <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-panel border-r border-white/[0.06] h-full flex-shrink-0">
+    <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-secondary border-r border-border h-full flex-shrink-0 transition-colors">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-white/[0.06] flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {/* Avatar */}
           <div
@@ -32,13 +34,23 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
           </div>
         </div>
 
-        <button
-          onClick={logout}
-          title="Sign out"
-          className="p-2 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2 text-text-muted hover:text-text-primary hover:bg-bg-hover rounded-lg transition-all duration-200 flex-shrink-0"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="p-2 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 flex-shrink-0"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Section label + Search */}
@@ -57,9 +69,9 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search people..."
-            className="w-full bg-bg-secondary border border-white/[0.06] rounded-xl pl-9 pr-4 py-2.5
+            className="w-full bg-bg-panel border border-transparent rounded-xl pl-9 pr-4 py-2.5
                        text-text-primary placeholder:text-text-muted text-sm
-                       focus:border-accent/30 focus:ring-1 focus:ring-accent/20 transition-all"
+                       focus:border-border transition-all"
           />
         </div>
       </div>

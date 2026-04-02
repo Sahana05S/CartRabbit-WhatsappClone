@@ -5,26 +5,33 @@ export default {
     extend: {
       colors: {
         bg: {
-          primary:   '#0b0f19',
-          secondary: '#111827',
-          panel:     '#161d2e',
-          hover:     '#1c2538',
-          active:    '#1e2d45',
+          primary:   'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          panel:     'var(--bg-panel)',
+          hover:     'var(--bg-hover)',
+          active:    'var(--bg-active)',
         },
         accent: {
-          DEFAULT: '#7c3aed',
-          light:   '#a78bfa',
-          dark:    '#5b21b6',
+          DEFAULT: 'var(--accent-default)',
+          light:   'var(--accent-light)',
+          dark:    'var(--accent-dark)',
         },
         surface: {
-          DEFAULT: '#1e293b',
-          light:   '#334155',
+          DEFAULT: 'var(--surface-default)',
+          light:   'var(--surface-light)',
         },
         text: {
-          primary:   '#f1f5f9',
-          secondary: '#94a3b8',
-          muted:     '#64748b',
+          primary:   'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted:     'var(--text-muted)',
         },
+        bubble: {
+          in: 'var(--bubble-in)',
+          out: 'var(--bubble-out)',
+        },
+        border: {
+          DEFAULT: 'var(--border-color)',
+        }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -61,8 +68,8 @@ export default {
           '100%': { transform: 'scale(1) translateY(0)',    opacity: '1' },
         },
         highlightFlash: {
-          '0%':   { backgroundColor: 'rgba(124, 58, 237, 0.25)' },
-          '60%':  { backgroundColor: 'rgba(124, 58, 237, 0.15)' },
+          '0%':   { backgroundColor: 'var(--highlight)' },
+          '60%':  { backgroundColor: 'var(--highlight)' },
           '100%': { backgroundColor: 'transparent' },
         },
         slideInRight: {

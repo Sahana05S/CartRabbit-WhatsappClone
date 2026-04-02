@@ -14,22 +14,73 @@
     overflow: hidden;
   }
 
+  /* Theme Tokens */
+  :root, [data-theme="light"] {
+    --bg-primary: #efeae2;
+    --bg-secondary: #f0f2f5;
+    --bg-panel: #ffffff;
+    --bg-hover: #f5f6f6;
+    --bg-active: #ebebeb;
+    
+    --accent-default: #00a884;
+    --accent-light: #25d366;
+    --accent-dark: #008069;
+    
+    --surface-default: #ffffff;
+    --surface-light: #d9fdd3;
+  
+    --text-primary: #111b21;
+    --text-secondary: #54656f;
+    --text-muted: #667781;
+
+    --bubble-in: #ffffff;
+    --bubble-out: #d9fdd3;
+    
+    --highlight: rgba(0, 168, 132, 0.2);
+    --border-color: rgba(11, 20, 26, 0.1);
+  }
+
+  [data-theme="dark"] {
+    --bg-primary: #0b141a;   /* Chat background */
+    --bg-secondary: #111b21; /* Sidebar, header, footer */
+    --bg-panel: #202c33;     /* Modals, info panel */
+    --bg-hover: #202c33;
+    --bg-active: #2a3942;
+
+    --accent-default: #00a884;
+    --accent-light: #00a884;
+    --accent-dark: #005c4b;
+    
+    --surface-default: #202c33;
+    --surface-light: #202c33;
+
+    --text-primary: #e9edef;
+    --text-secondary: #8696a0;
+    --text-muted: #8696a0;
+
+    --bubble-in: #202c33; /* Incoming bubble */
+    --bubble-out: #005c4b; /* Outgoing bubble */
+    
+    --highlight: rgba(0, 168, 132, 0.1);
+    --border-color: #222d34; /* WhatsApp dark mode borders */
+  }
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background-color: #0b0f19;
-    color: #f1f5f9;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  ::-webkit-scrollbar-thumb { background: rgba(134, 150, 160, 0.4); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(134, 150, 160, 0.6); }
 
   /* Selection */
-  ::selection { background: rgba(124, 58, 237, 0.3); color: #f1f5f9; }
+  ::selection { background: var(--accent-light); opacity: 0.3; color: #fff; }
 
   input, textarea {
     outline: none;
@@ -37,13 +88,6 @@
 }
 
 @layer components {
-  .glass {
-    background: rgba(22, 29, 46, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
   .btn-primary {
     @apply bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed
            text-white font-semibold py-3 px-5 rounded-xl transition-all duration-200
@@ -52,9 +96,9 @@
   }
 
   .input-field {
-    @apply w-full bg-bg-secondary border border-white/10 rounded-xl px-4 py-3
+    @apply w-full bg-bg-secondary border border-border rounded-xl px-4 py-3
            text-text-primary placeholder:text-text-muted text-sm
-           focus:border-accent/50 focus:ring-2 focus:ring-accent/20
+           focus:border-accent focus:ring-1 focus:ring-accent
            transition-all duration-200;
   }
 
