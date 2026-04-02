@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../api/axios';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { playSubtleBeep, requestNotificationPermission, showBrowserNotification } from '../utils/notifications';
 
 export const useUsers = (selectedUserId) => {
   const [users, setUsers] = useState([]);
@@ -57,9 +58,15 @@ export const useUsers = (selectedUserId) => {
 
         let newUnreadCount = prevUsers[userIndex].unreadCount || 0;
         
-        // If message is incoming and not from the currently open chat
-        if (msgSenderId !== currentUser._id && otherUserId !== selectedUserIdRef.current) {
+        const isIncoming = msgSenderId !== currentUser._id;
+        const isNotActiveChat = otherUserId !== selectedUserIdRef.current;
+        const isTabHidden = document.hidden;
+        
+        if (isIncoming && (isNotActiveChat || isTabHidden)) {
           newUnreadCount += 1;
+          
+          playSubtleBeep();
+          showBrowserNotification(message, prevUsers[userIndex].username);
         }
 
         const updatedUser = { 
@@ -114,6 +121,37 @@ export const useUsers = (selectedUserId) => {
       socket.off('userOffline', handleUserOffline);
     };
   }, [socket, currentUser]);
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // Update tab title based on total unreads
+  useEffect(() => {
+    const totalUnreads = users.reduce((sum, u) => sum + (u.unreadCount || 0), 0);
+    if (totalUnreads > 0) {
+      document.title = `(${totalUnreads}) New messages - NexTalk`;
+    } else {
+      document.title = 'NexTalk';
+    }
+  }, [users]);
+
+  // Handle tab visibility change to clear unreads for active chat
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && selectedUserIdRef.current) {
+        setUsers((prev) => 
+          prev.map((u) => 
+            u._id === selectedUserIdRef.current && u.unreadCount > 0
+              ? { ...u, unreadCount: 0 }
+              : u
+          )
+        );
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   return { users, loading, error, refetch: fetchUsers };
 };

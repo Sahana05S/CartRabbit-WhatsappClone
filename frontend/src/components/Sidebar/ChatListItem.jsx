@@ -31,7 +31,7 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline mb-0.5">
-          <h3 className="text-sm font-semibold text-text-primary truncate pr-2">
+          <h3 className={`text-sm truncate pr-2 ${user.unreadCount > 0 ? 'font-bold text-accent-light' : 'font-semibold text-text-primary'}`}>
             {user.username}
           </h3>
           {lastMessage?.createdAt && (
@@ -42,18 +42,23 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
         </div>
         <div className="flex justify-between items-center gap-2">
           <p className={`text-xs truncate flex-1 ${user.unreadCount > 0 ? 'text-white' : 'text-text-muted'}`}>
-            {lastMessage ? (
-              <>
-                {isMe && <span className="opacity-70 font-normal">You: </span>}
-                {lastMessage.text}
-              </>
-            ) : (
-              isOnline ? 'Online' : 'Offline'
-            )}
+            {lastMessage ? (() => {
+              if (lastMessage.isDeletedForEveryone) return 'This message was deleted';
+              const prefix = isMe ? <span className="opacity-70 font-normal">You: </span> : null;
+              let body;
+              if (lastMessage.messageType === 'image') {
+                body = '📷 Photo';
+              } else if (lastMessage.messageType === 'file') {
+                body = `📎 ${lastMessage.attachment?.fileName || 'File'}`;
+              } else {
+                body = lastMessage.text || '';
+              }
+              return <>{prefix}{body}</>;
+            })() : (isOnline ? 'Online' : 'Offline')}
           </p>
           
           {user.unreadCount > 0 && (
-            <span className="flex-shrink-0 bg-accent text-white text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center shadow-sm">
+            <span className="flex-shrink-0 bg-accent text-white text-[10px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse">
               {user.unreadCount > 99 ? '99+' : user.unreadCount}
             </span>
           )}

@@ -92,13 +92,28 @@ export const useMessages = (selectedUserId) => {
       }
     };
 
+    const handleMessageReaction = ({ messageId, reactions }) => {
+      setMessages((prev) => prev.map(m => m._id === messageId ? { ...m, reactions } : m));
+    };
+
+    // Real-time: the sender deleted a message for everyone — replace content with placeholder
+    const handleMessageDeletedForEveryone = ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map(m => m._id === messageId ? { ...m, isDeletedForEveryone: true } : m)
+      );
+    };
+
     socket.on('newMessage', handleNewMessage);
     socket.on('messageDelivered', handleMessageDelivered);
     socket.on('messagesRead', handleMessagesRead);
+    socket.on('messageReaction', handleMessageReaction);
+    socket.on('messageDeletedForEveryone', handleMessageDeletedForEveryone);
     return () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('messageDelivered', handleMessageDelivered);
       socket.off('messagesRead', handleMessagesRead);
+      socket.off('messageReaction', handleMessageReaction);
+      socket.off('messageDeletedForEveryone', handleMessageDeletedForEveryone);
     };
   }, [socket, currentUser]);
 
@@ -110,5 +125,22 @@ export const useMessages = (selectedUserId) => {
     });
   };
 
-  return { messages, loading, error, addMessage };
+  // Remove a message from local state (used by delete-for-me)
+  const removeMessageLocally = (messageId) => {
+    setMessages((prev) => prev.filter(m => m._id !== messageId));
+  };
+
+  // Update starredBy in local state after toggle (avoids refetch)
+  const updateMessageStar = (messageId, isStarred, userId) => {
+    setMessages((prev) => prev.map(m => {
+      if (m._id !== messageId) return m;
+      const alreadyIn = (m.starredBy || []).map(id => id?.toString?.() ?? id).includes(userId);
+      const starredBy = isStarred
+        ? (alreadyIn ? m.starredBy : [...(m.starredBy || []), userId])
+        : (m.starredBy || []).filter(id => (id?.toString?.() ?? id) !== userId);
+      return { ...m, starredBy };
+    }));
+  };
+
+  return { messages, loading, error, addMessage, removeMessageLocally, updateMessageStar };
 };

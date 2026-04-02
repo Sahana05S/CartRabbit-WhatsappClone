@@ -31,6 +31,10 @@ connectDB();
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
 
+// Serve uploaded files as static assets
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
