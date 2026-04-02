@@ -3,8 +3,10 @@ const User = require('../models/User');
 
 // Track online users: Map<userId, Set<socketId>>
 const onlineUsers = new Map();
+let ioInstance;
 
 const initSocket = (io) => {
+  ioInstance = io;
   // Socket-level auth middleware
   io.use(async (socket, next) => {
     try {
@@ -76,4 +78,11 @@ const initSocket = (io) => {
   });
 };
 
-module.exports = { initSocket };
+const getIO = () => {
+  if (!ioInstance) {
+    throw new Error('Socket.io not initialized!');
+  }
+  return ioInstance;
+};
+
+module.exports = { initSocket, getIO };

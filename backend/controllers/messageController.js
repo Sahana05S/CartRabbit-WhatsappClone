@@ -1,4 +1,5 @@
 const Message = require('../models/Message');
+const { getIO } = require('../socket/socketHandler');
 
 // POST /api/messages
 const sendMessage = async (req, res) => {
@@ -19,6 +20,11 @@ const sendMessage = async (req, res) => {
       { path: 'senderId', select: 'username avatarColor' },
       { path: 'receiverId', select: 'username avatarColor' },
     ]);
+
+    // Emit real-time message to receiver and sender (for multi-device sync)
+    const io = getIO();
+    io.to(receiverId.toString()).emit('newMessage', populated);
+    io.to(senderId.toString()).emit('newMessage', populated);
 
     res.status(201).json({ success: true, message: populated });
   } catch (error) {

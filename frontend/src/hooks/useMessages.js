@@ -41,10 +41,22 @@ export const useMessages = (selectedUserId) => {
     if (!socket) return;
 
     const handleNewMessage = (message) => {
-      const senderId = message.senderId?._id || message.senderId;
-      // Only append if this message is from the user we're currently chatting with
-      if (senderId === selectedUserIdRef.current) {
-        setMessages((prev) => [...prev, message]);
+      const msgSenderId = message.senderId?._id || message.senderId;
+      const msgReceiverId = message.receiverId?._id || message.receiverId;
+      const activeChatId = selectedUserIdRef.current;
+
+      // Check if message belongs to the current open conversation
+      if (activeChatId === msgSenderId || activeChatId === msgReceiverId) {
+        setMessages((prev) => {
+          // Prevent duplicates (in case of same tab optimistic appending)
+          const isDuplicate = prev.some((m) => m._id === message._id);
+          if (isDuplicate) return prev;
+          
+          return [...prev, message];
+        });
+      } else {
+        // Message belongs to a different chat, handle separately (e.g. unread count badge)
+        // Future implementation goes here
       }
     };
 
@@ -53,7 +65,11 @@ export const useMessages = (selectedUserId) => {
   }, [socket]);
 
   const addMessage = (message) => {
-    setMessages((prev) => [...prev, message]);
+    setMessages((prev) => {
+      const isDuplicate = prev.some((m) => m._id === message._id);
+      if (isDuplicate) return prev;
+      return [...prev, message];
+    });
   };
 
   return { messages, loading, error, addMessage };
