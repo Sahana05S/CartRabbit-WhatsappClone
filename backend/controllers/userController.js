@@ -1,11 +1,35 @@
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 // GET /api/users — all users except the logged-in user
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ _id: { $ne: req.user._id } })
+    const currentUserId = req.user._id;
+    let users = await User.find({ _id: { $ne: currentUserId } })
       .select('-password')
-      .sort({ username: 1 });
+      .lean();
+
+    users = await Promise.all(users.map(async (user) => {
+      const lastMessage = await Message.findOne({
+        $or: [
+          { senderId: currentUserId, receiverId: user._id },
+          { senderId: user._id, receiverId: currentUserId },
+        ],
+      }).sort({ createdAt: -1 }).lean();
+
+      return {
+        ...user,
+        lastMessage: lastMessage || null
+      };
+    }));
+
+    users.sort((a, b) => {
+      const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      if (dateA !== dateB) return dateB - dateA;
+      return a.username.localeCompare(b.username);
+    });
+
     res.json({ success: true, users });
   } catch (error) {
     console.error('Get users error:', error);

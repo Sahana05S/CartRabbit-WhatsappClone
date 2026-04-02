@@ -1,6 +1,15 @@
-import { getInitials } from '../../utils/formatTime';
+import { getInitials, formatPreviewTime } from '../../utils/formatTime';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ChatListItem({ user, isActive, isOnline, onClick }) {
+  const { currentUser } = useAuth();
+  
+  const lastMessage = user.lastMessage;
+  const isMe = lastMessage && (
+    lastMessage.senderId?._id === currentUser?._id || 
+    lastMessage.senderId === currentUser?._id
+  );
+
   return (
     <button
       onClick={onClick}
@@ -25,10 +34,21 @@ export default function ChatListItem({ user, isActive, isOnline, onClick }) {
           <h3 className="text-sm font-semibold text-text-primary truncate pr-2">
             {user.username}
           </h3>
-          {/* We could add last message time here, but leaving it clean for now */}
+          {lastMessage?.createdAt && (
+            <span className="text-[10px] text-text-muted flex-shrink-0 ml-2">
+              {formatPreviewTime(lastMessage.createdAt)}
+            </span>
+          )}
         </div>
         <p className="text-xs text-text-muted truncate">
-          {isOnline ? 'Online' : 'Offline'}
+          {lastMessage ? (
+            <>
+              {isMe && <span className="opacity-70">You: </span>}
+              {lastMessage.text}
+            </>
+          ) : (
+            isOnline ? 'Online' : 'Offline'
+          )}
         </p>
       </div>
     </button>
