@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
         return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
       },
     },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

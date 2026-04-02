@@ -84,6 +84,11 @@ const initSocket = (io) => {
         // If the user has no more active connections, completely remove them from the online map
         if (userSockets.size === 0) {
           onlineUsers.delete(userId);
+          
+          // Update last seen in DB and emit to clients
+          const now = new Date();
+          require('../models/User').findByIdAndUpdate(userId, { lastSeen: now }).catch(console.error);
+          io.emit('userOffline', { userId, lastSeen: now });
         }
       }
       

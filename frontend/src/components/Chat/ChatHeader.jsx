@@ -1,10 +1,25 @@
-import { getInitials } from '../../utils/formatTime';
+import { useState, useEffect } from 'react';
+import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
 import { MoreVertical, Search, Video, Phone } from 'lucide-react';
 
 export default function ChatHeader({ user }) {
-  const { onlineUsers } = useSocket();
+  const { onlineUsers, socket } = useSocket();
   const isOnline = onlineUsers.includes(user._id);
+  const [lastSeen, setLastSeen] = useState(user.lastSeen);
+
+  useEffect(() => {
+    setLastSeen(user.lastSeen);
+  }, [user]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleUserOffline = ({ userId, lastSeen: newLastSeen }) => {
+      if (userId === user._id) setLastSeen(newLastSeen);
+    };
+    socket.on('userOffline', handleUserOffline);
+    return () => socket.off('userOffline', handleUserOffline);
+  }, [socket, user._id]);
 
   return (
     <header className="h-[72px] px-6 border-b border-white/[0.04] flex items-center justify-between bg-bg-panel/40 backdrop-blur-md sticky top-0 z-10">
@@ -26,7 +41,12 @@ export default function ChatHeader({ user }) {
             {user.username}
           </h2>
           <p className="text-xs text-text-muted mt-0.5">
-            {isOnline ? 'Active now' : 'Offline'}
+            {isOnline 
+              ? 'online' 
+              : lastSeen 
+                ? `last seen ${formatLastSeen(lastSeen)}` 
+                : 'offline'
+            }
           </p>
         </div>
       </div>

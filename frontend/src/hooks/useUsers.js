@@ -99,13 +99,19 @@ export const useUsers = (selectedUserId) => {
       }));
     };
 
+    const handleUserOffline = ({ userId, lastSeen }) => {
+      setUsers((prev) => prev.map(u => u._id === userId ? { ...u, lastSeen } : u));
+    };
+
     socket.on('messageDelivered', handleMessageDelivered);
     socket.on('messagesRead', handleMessagesRead);
+    socket.on('userOffline', handleUserOffline);
 
     return () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('messageDelivered', handleMessageDelivered);
       socket.off('messagesRead', handleMessagesRead);
+      socket.off('userOffline', handleUserOffline);
     };
   }, [socket, currentUser]);
 
