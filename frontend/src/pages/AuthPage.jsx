@@ -5,13 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 export default function AuthPage() {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const navigate = useNavigate();
+  const initialMode = window.location.pathname.includes('register') ? 'register' : 'login';
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [form, setForm] = useState({ username: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -44,6 +45,7 @@ export default function AuthPage() {
     setMode(newMode);
     setError('');
     setForm({ username: '', email: '', password: '' });
+    navigate(`/${newMode}`, { replace: true });
   };
 
   return (
@@ -58,13 +60,7 @@ export default function AuthPage() {
 
         {/* Logo section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 relative"
-               style={{ background: 'linear-gradient(135deg, #7c3aed, #5b21b6)' }}>
-            <MessageCircle className="w-8 h-8 text-white" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-bg-primary flex items-center justify-center">
-              <Zap className="w-2 h-2 text-white" />
-            </span>
-          </div>
+          <img src="/logo.png" alt="NexTalk Logo" className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-xl border-4 border-bg-panel/50" />
           <h1 className="text-3xl font-bold text-text-primary tracking-tight">NexTalk</h1>
           <p className="text-text-muted mt-1.5 text-sm">Real-time messaging, reimagined</p>
         </div>

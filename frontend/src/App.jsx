@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
 import { registerServiceWorker } from './utils/notifications';
+import LandingPage from './pages/LandingPage';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -29,7 +30,9 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/"     element={<AuthPage />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<AuthPage />} />
+      <Route path="/register" element={<AuthPage />} />
       <Route
         path="/chat"
         element={
