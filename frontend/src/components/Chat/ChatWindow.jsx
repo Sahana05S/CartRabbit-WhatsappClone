@@ -21,6 +21,41 @@ export default function ChatWindow({ selectedUser }) {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const messageListRef = useRef(null);
 
+  const wallpaperSetting = currentUser?.settings?.appearance?.chatWallpaper;
+  
+  let wallpaperStyle = {
+    backgroundImage: 'var(--chat-bg-image)',
+    backgroundRepeat: 'repeat',
+    backgroundSize: '400px',
+    backgroundPosition: 'top left'
+  };
+  let overlayClass = ""; // Doodles are self-contained, no extra overlay needed by default
+
+  if (wallpaperSetting && wallpaperSetting.type !== 'none' && wallpaperSetting.value) {
+    if (wallpaperSetting.type === 'color') {
+      wallpaperStyle = { backgroundColor: wallpaperSetting.value, backgroundImage: 'none' };
+      overlayClass = "";
+    } else if (wallpaperSetting.type === 'preset') {
+      wallpaperStyle = { 
+        backgroundImage: wallpaperSetting.value, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        backgroundRepeat: 'no-repeat'
+      };
+      overlayClass = "absolute inset-0 bg-white/30 dark:bg-black/50 pointer-events-none z-0 mix-blend-overlay";
+    } else if (wallpaperSetting.type === 'custom') {
+      const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+      const resolvedUrl = wallpaperSetting.value.startsWith('http') ? wallpaperSetting.value : `${BACKEND_URL}${wallpaperSetting.value}`;
+      wallpaperStyle = { 
+        backgroundImage: `url("${resolvedUrl}")`, 
+        backgroundSize: 'cover', 
+        backgroundPosition: 'center', 
+        backgroundRepeat: 'no-repeat'
+      };
+      overlayClass = "absolute inset-0 bg-white/30 dark:bg-black/50 pointer-events-none z-0 mix-blend-overlay";
+    }
+  }
+
   // Search state — all logic lives in the hook
   const search = useSearch(messages);
 
@@ -104,20 +139,26 @@ export default function ChatWindow({ selectedUser }) {
         <div
           key={selectedUser._id}
           className="flex-1 overflow-hidden relative animate-fade-in"
+          style={wallpaperStyle}
         >
-          <MessageList
-            ref={messageListRef}
-            messages={messages}
-            loading={loading}
-            error={error}
-            selectedUser={selectedUser}
-            onReply={handleReply}
-            onDeleteForMe={removeMessageLocally}
-            onStarToggle={handleStarToggle}
-            searchQuery={search.query}
-            searchMatchIds={search.matchIds}
-            searchActiveId={search.activeId}
-          />
+          {wallpaperSetting?.type && wallpaperSetting.type !== 'none' && overlayClass && (
+            <div className={overlayClass} />
+          )}
+          <div className="absolute inset-0 z-10">
+            <MessageList
+              ref={messageListRef}
+              messages={messages}
+              loading={loading}
+              error={error}
+              selectedUser={selectedUser}
+              onReply={handleReply}
+              onDeleteForMe={removeMessageLocally}
+              onStarToggle={handleStarToggle}
+              searchQuery={search.query}
+              searchMatchIds={search.matchIds}
+              searchActiveId={search.activeId}
+            />
+          </div>
         </div>
 
         {/* Typing indicator */}

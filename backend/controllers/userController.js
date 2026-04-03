@@ -135,12 +135,13 @@ const updateProfile = async (req, res) => {
 // PATCH /api/users/settings
 const updateSettings = async (req, res) => {
   try {
-    const { privacy, notifications, chat } = req.body;
+    const { privacy, notifications, chat, appearance } = req.body;
     const user = await User.findById(req.user._id);
 
     if (privacy)       user.settings.privacy       = { ...user.settings.privacy.toObject(),       ...privacy       };
     if (notifications) user.settings.notifications = { ...user.settings.notifications.toObject(), ...notifications };
     if (chat)          user.settings.chat          = { ...user.settings.chat.toObject(),          ...chat          };
+    if (appearance)    user.settings.appearance    = { ...(user.settings.appearance?.toObject ? user.settings.appearance.toObject() : user.settings.appearance), ...appearance };
 
     await user.save();
     const updated = await User.findById(user._id).select('-password');
@@ -171,6 +172,30 @@ const updateAvatar = async (req, res) => {
   }
 };
 
+// POST /api/users/wallpaper
+const uploadWallpaper = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+
+    const wallpaperUrl = `/uploads/${req.file.filename}`;
+    const user = await User.findById(req.user._id);
+    
+    user.settings.appearance = { 
+      ...(user.settings.appearance?.toObject ? user.settings.appearance.toObject() : user.settings.appearance), 
+      chatWallpaper: { type: 'custom', value: wallpaperUrl } 
+    };
+
+    await user.save();
+    const updated = await User.findById(user._id).select('-password');
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    console.error('Wallpaper upload error:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload wallpaper.' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -178,6 +203,7 @@ module.exports = {
   updateProfile,
   updateSettings,
   updateAvatar,
+  uploadWallpaper,
   togglePinChat,
   toggleArchiveChat
 };

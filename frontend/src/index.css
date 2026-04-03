@@ -17,6 +17,7 @@
   /* Theme Tokens */
   :root, [data-theme="light"] {
     --bg-primary: #efeae2;
+    --chat-bg-image: url('/doodle-light.jpg');
     --bg-secondary: #f0f2f5;
     --bg-panel: #ffffff;
     --bg-hover: #f5f6f6;
@@ -42,6 +43,7 @@
 
   [data-theme="dark"] {
     --bg-primary: #0b141a;   /* Chat background */
+    --chat-bg-image: url('/doodle-dark.jpg');
     --bg-secondary: #111b21; /* Sidebar, header, footer */
     --bg-panel: #202c33;     /* Modals, info panel */
     --bg-hover: #202c33;

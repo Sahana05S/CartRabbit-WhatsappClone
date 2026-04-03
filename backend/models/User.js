@@ -47,6 +47,12 @@ const userSchema = new mongoose.Schema(
       chat: {
         enterToSend: { type: Boolean, default: true },
       },
+      appearance: {
+        chatWallpaper: {
+          type: { type: String, enum: ['preset', 'color', 'none', 'custom'], default: 'none' },
+          value: { type: String, default: '' },
+        }
+      }
     },
     lastSeen: {
       type: Date,
