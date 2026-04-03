@@ -233,9 +233,24 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { 
-      e.preventDefault(); 
-      handleSend(); 
+    const enterToSend = currentUser?.settings?.chat?.enterToSend ?? true;
+    
+    if (e.key === 'Enter') {
+      if (enterToSend) {
+        if (!e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      } else {
+        // If enterToSend is false, Enter alone just adds a newline (default behavior)
+        // Shift+Enter should send if we want to follow some apps, but usually 
+        // if enterToSend is false, people want Enter to be newline and click Send to send.
+        // I will make Shift+Enter send when Enter is newline.
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      }
     }
     if (e.key === 'Escape') {
       setShowEmojiPicker(false);

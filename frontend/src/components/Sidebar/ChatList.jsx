@@ -16,9 +16,12 @@ export default function ChatList({ search, selectedUser, onSelectUser }) {
   if (error) return <ErrorState message={error} compact />;
   if (users.length === 0) return <EmptyState icon={Users} title="No chats" description="Invite some friends to get started!" />;
 
-  const filtered = users.filter((u) =>
-    u.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = users.filter((u) => {
+    const searchLow = search.toLowerCase();
+    const nameMatch = u.displayName?.toLowerCase().includes(searchLow);
+    const userMatch = u.username.toLowerCase().includes(searchLow);
+    return nameMatch || userMatch;
+  });
 
   if (filtered.length === 0 && search) {
     return <EmptyState icon={SearchX} title="No results found" description={`No chats matching "${search}"`} />;

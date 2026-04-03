@@ -4,6 +4,11 @@ import { Pin, Archive, PinOff, ArchiveRestore, Users } from 'lucide-react';
 
 export default function ChatListItem({ user, isActive, isOnline, onClick, onTogglePin, onToggleArchive }) {
   const { currentUser } = useAuth();
+  const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+  const resolveAvatar = (url) => {
+    if (!url) return null;
+    return url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
+  };
   
   const lastMessage = user.lastMessage;
   const isMe = lastMessage && (
@@ -20,10 +25,14 @@ export default function ChatListItem({ user, isActive, isOnline, onClick, onTogg
     >
       <div className="relative flex-shrink-0">
         <div
-          className="avatar w-12 h-12"
+          className="avatar w-12 h-12 overflow-hidden ring-1 ring-border group-hover:ring-accent/40 transition-all duration-200"
           style={{ backgroundColor: user.avatarColor || 'var(--accent-default)' }}
         >
-          {getInitials(user.username)}
+          {user.avatarUrl ? (
+            <img src={resolveAvatar(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
+          ) : (
+            getInitials(user.displayName || user.username)
+          )}
         </div>
         {isOnline && (
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-bg-panel rounded-full" />
@@ -34,7 +43,7 @@ export default function ChatListItem({ user, isActive, isOnline, onClick, onTogg
         <div className="flex justify-between items-baseline mb-0.5">
           <h3 className={`flex items-center gap-1.5 text-sm truncate pr-2 ${user.unreadCount > 0 ? 'font-bold text-accent' : 'font-semibold text-text-primary'}`}>
             {user.isGroup && <Users className="w-3.5 h-3.5 flex-shrink-0 text-text-muted opacity-80" />}
-            <span className="truncate">{user.username}</span>
+            <span className="truncate">{user.displayName || user.username}</span>
           </h3>
           {lastMessage?.createdAt && (
             <span className={`text-[10px] flex-shrink-0 ml-2 ${user.unreadCount > 0 ? 'text-accent font-bold' : 'text-text-muted'}`}>

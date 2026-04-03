@@ -105,4 +105,79 @@ const toggleArchiveChat = async (req, res) => {
   }
 };
 
-module.exports = { getAllUsers, getUserById, togglePinChat, toggleArchiveChat };
+// GET /api/users/me — current user with all fields populated
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch user profile.' });
+  }
+};
+
+// PATCH /api/users/profile
+const updateProfile = async (req, res) => {
+  try {
+    const { displayName, bio } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (displayName !== undefined) user.displayName = displayName.trim().substring(0, 50);
+    if (bio !== undefined)         user.bio         = bio.trim().substring(0, 150);
+
+    await user.save();
+    const updated = await User.findById(user._id).select('-password');
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update profile.' });
+  }
+};
+
+// PATCH /api/users/settings
+const updateSettings = async (req, res) => {
+  try {
+    const { privacy, notifications, chat } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (privacy)       user.settings.privacy       = { ...user.settings.privacy.toObject(),       ...privacy       };
+    if (notifications) user.settings.notifications = { ...user.settings.notifications.toObject(), ...notifications };
+    if (chat)          user.settings.chat          = { ...user.settings.chat.toObject(),          ...chat          };
+
+    await user.save();
+    const updated = await User.findById(user._id).select('-password');
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update settings.' });
+  }
+};
+
+// POST /api/users/avatar
+const updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+
+    const avatarUrl = `/uploads/${req.file.filename}`;
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatarUrl },
+      { new: true }
+    ).select('-password');
+
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to upload avatar.' });
+  }
+};
+
+module.exports = {
+  getAllUsers,
+  getUserById,
+  getMe,
+  updateProfile,
+  updateSettings,
+  updateAvatar,
+  togglePinChat,
+  toggleArchiveChat
+};

@@ -31,6 +31,23 @@ const userSchema = new mongoose.Schema(
         return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
       },
     },
+    displayName: { type: String, trim: true, default: '' },
+    avatarUrl:   { type: String, default: null },
+    bio:         { type: String, maxlength: 150, default: 'Hey there! I am using NexTalk.' },
+    settings: {
+      privacy: {
+        lastSeen:     { type: Boolean, default: true },
+        onlineStatus: { type: Boolean, default: true },
+        readReceipts: { type: Boolean, default: true },
+      },
+      notifications: {
+        sounds:  { type: Boolean, default: true },
+        desktop: { type: Boolean, default: true },
+      },
+      chat: {
+        enterToSend: { type: Boolean, default: true },
+      },
+    },
     lastSeen: {
       type: Date,
       default: Date.now,

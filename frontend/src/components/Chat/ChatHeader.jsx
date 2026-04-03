@@ -9,6 +9,12 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
   const [lastSeen, setLastSeen] = useState(user.lastSeen);
   const searchInputRef = useRef(null);
 
+  const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+  const resolveAvatar = (url) => {
+    if (!url) return null;
+    return url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
+  };
+
   // Destructure search state passed from parent
   const {
     isOpen, openSearch, closeSearch,
@@ -56,10 +62,14 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
         <div className="flex items-center gap-4">
           <div className="relative">
             <div
-              className="avatar w-10 h-10 shadow-sm"
+              className="avatar w-10 h-10 shadow-sm overflow-hidden"
               style={{ backgroundColor: user.avatarColor || 'var(--accent-default)' }}
             >
-              {getInitials(user.username)}
+              {user.avatarUrl ? (
+                <img src={resolveAvatar(user.avatarUrl)} alt={user.username} className="w-full h-full object-cover" />
+              ) : (
+                getInitials(user.displayName || user.username)
+              )}
             </div>
             {isOnline && (
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-bg-panel rounded-full" />
@@ -69,7 +79,7 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
           <div>
             <h2 className="text-base font-semibold text-text-primary leading-tight flex items-center gap-1.5">
               {user.isGroup && <Users className="w-4 h-4 text-text-muted opacity-80" />}
-              {user.username}
+              {user.displayName || user.username}
             </h2>
             {/* Priority: typing > online > last seen */}
             <p className={`text-xs mt-0.5 transition-all duration-200 ${

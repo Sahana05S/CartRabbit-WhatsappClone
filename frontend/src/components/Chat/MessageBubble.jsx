@@ -190,7 +190,7 @@ export default function MessageBubble({
                 className="text-[12px] font-bold mb-1 tracking-tight"
                 style={{ color: message.senderId?.avatarColor || '#7c3aed' }}
               >
-                {message.senderId?.username || 'Unknown'}
+                {message.senderId?.displayName || message.senderId?.username || 'Unknown'}
               </div>
             )}
 

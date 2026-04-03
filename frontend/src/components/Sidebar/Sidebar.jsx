@@ -5,38 +5,56 @@ import { useTheme } from '../../context/ThemeContext';
 import { getInitials } from '../../utils/formatTime';
 import ChatList from './ChatList';
 import CreateGroupModal from './CreateGroupModal';
+import ProfilePanel from './ProfilePanel';
+import SettingsPanel from './SettingsPanel';
+import { Settings } from 'lucide-react';
 
 export default function Sidebar({ selectedUser, onSelectUser }) {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [search, setSearch] = useState('');
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showProfile,    setShowProfile]    = useState(false);
+  const [showSettings,   setShowSettings]   = useState(false);
+
+  const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+  const resolveAvatar = (url) => {
+    if (!url) return null;
+    return url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
+  };
 
   return (
     <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-secondary border-r border-border h-full flex-shrink-0 transition-colors relative">
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
+        <button 
+          onClick={() => setShowProfile(true)}
+          className="flex items-center gap-3 min-w-0 hover:bg-bg-hover rounded-xl p-1 -ml-1 transition-all duration-200 group text-left flex-1 mr-2"
+        >
           {/* Avatar */}
           <div
-            className="avatar w-10 h-10 text-sm flex-shrink-0"
+            className="avatar w-10 h-10 text-sm flex-shrink-0 ring-1 ring-border group-hover:ring-accent/40 overflow-hidden"
             style={{ backgroundColor: currentUser?.avatarColor || '#7c3aed' }}
           >
-            {getInitials(currentUser?.username)}
+            {currentUser?.avatarUrl ? (
+              <img src={resolveAvatar(currentUser.avatarUrl)} alt="Me" className="w-full h-full object-cover" />
+            ) : (
+              getInitials(currentUser?.username)
+            )}
           </div>
           <div className="min-w-0">
-            <p className="text-text-primary font-semibold text-sm truncate leading-tight">
-              {currentUser?.username}
+            <p className="text-text-primary font-semibold text-sm truncate leading-tight group-hover:text-accent-light transition-colors">
+              {currentUser?.displayName || currentUser?.username}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-2 h-2 bg-green-400 rounded-full inline-block" />
-              <span className="text-text-muted text-xs">Online</span>
+              <span className="text-text-muted text-[11px]">Online</span>
             </div>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setShowGroupModal(true)}
             title="New Group"
@@ -46,13 +64,13 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
           </button>
 
           <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-2 text-text-muted hover:text-text-primary hover:bg-bg-hover rounded-lg transition-all duration-200 flex-shrink-0"
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+            className="p-2 text-text-muted hover:text-accent-light hover:bg-bg-hover rounded-lg transition-all duration-200 flex-shrink-0"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <Settings className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={logout}
             title="Sign out"
@@ -106,6 +124,9 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
           }}
         />
       )}
+
+      {showProfile && <ProfilePanel onClose={() => setShowProfile(false)} />}
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </aside>
   );
 }
