@@ -12,7 +12,7 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function MessageInput({ receiverId, onMessageSent, replyTo, onCancelReply }) {
+export default function MessageInput({ receiverId, isGroup, onMessageSent, replyTo, onCancelReply }) {
   const [text,           setText]          = useState('');
   const [sending,        setSending]        = useState(false);
   const [pendingFile,    setPendingFile]    = useState(null);   // { file, previewUrl, isImage }
@@ -144,6 +144,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
         const formData = new FormData();
         formData.append('file',       pendingFile.file);
         formData.append('receiverId', receiverId);
+        if (isGroup) formData.append('isGroup', 'true');
         if (cleanText) formData.append('caption', cleanText);
 
         if (replyTo) {
@@ -164,6 +165,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
       } else {
         // ── Text-only send ─────────────────────────────────
         const payload = { receiverId, text: cleanText };
+        if (isGroup) payload.isGroup = true;
         if (replyTo) {
           payload.replyTo = {
             messageId:   replyTo._id,
@@ -184,7 +186,7 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
       textareaRef.current?.focus();
 
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      if (socket) socket.emit('stopTyping', { receiverId });
+      if (socket) socket.emit('stopTyping', { receiverId, isGroup });
 
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to send. Please try again.';
@@ -208,9 +210,9 @@ export default function MessageInput({ receiverId, onMessageSent, replyTo, onCan
   const handleTextChange = (e) => {
     setText(e.target.value);
     if (socket && receiverId) {
-      socket.emit('typing', { receiverId });
+      socket.emit('typing', { receiverId, isGroup });
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => socket.emit('stopTyping', { receiverId }), 1500);
+      typingTimeoutRef.current = setTimeout(() => socket.emit('stopTyping', { receiverId, isGroup }), 1500);
     }
   };
 

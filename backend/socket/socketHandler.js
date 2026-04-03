@@ -29,6 +29,13 @@ const initSocket = (io) => {
 
     // Join the user's personal room for targeted delivery
     socket.join(userId);
+
+    // Join all group rooms the user belongs to
+    require('../models/Group').find({ members: userId }).select('_id')
+      .then(groups => {
+        groups.forEach(g => socket.join(g._id.toString()));
+      })
+      .catch(err => console.error('Error joining group rooms:', err));
     
     // Add socketId to the user's set of active connections
     if (!onlineUsers.has(userId)) {
@@ -48,6 +55,14 @@ const initSocket = (io) => {
       }
     });
 
+    socket.on('joinGroup', (groupId) => {
+      socket.join(groupId);
+    });
+
+    socket.on('leaveGroupRoom', (groupId) => {
+      socket.leave(groupId);
+    });
+
     socket.on('messageDelivered', async (messageId) => {
       try {
         const message = await require('../models/Message').findByIdAndUpdate(
@@ -63,15 +78,25 @@ const initSocket = (io) => {
       }
     });
 
-    socket.on('typing', ({ receiverId }) => {
+    socket.on('typing', ({ receiverId, isGroup }) => {
       if (receiverId) {
-        socket.to(receiverId).emit('typing', socket.user._id.toString());
+        // If it's a group, broadcast to the group room, else to the user's room
+        socket.to(receiverId).emit('typing', {
+          chatId: receiverId,
+          userId: socket.user._id.toString(),
+          username: socket.user.username,
+          isGroup: !!isGroup
+        });
       }
     });
 
-    socket.on('stopTyping', ({ receiverId }) => {
+    socket.on('stopTyping', ({ receiverId, isGroup }) => {
       if (receiverId) {
-        socket.to(receiverId).emit('stopTyping', socket.user._id.toString());
+        socket.to(receiverId).emit('stopTyping', {
+          chatId: receiverId,
+          userId: socket.user._id.toString(),
+          isGroup: !!isGroup
+        });
       }
     });
 

@@ -183,6 +183,16 @@ export default function MessageBubble({
               </div>
             )}
 
+            {/* Group sender name */}
+            {message.chatType === 'group' && !isSent && (
+              <div
+                className="text-[12px] font-bold mb-1 tracking-tight"
+                style={{ color: message.senderId?.avatarColor || '#7c3aed' }}
+              >
+                {message.senderId?.username || 'Unknown'}
+              </div>
+            )}
+
             {/* Quoted reply block */}
             {hasReplyBlock && (() => {
               const rt          = message.replyTo;

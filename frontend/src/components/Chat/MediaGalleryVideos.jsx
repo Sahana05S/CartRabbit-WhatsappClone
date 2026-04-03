@@ -59,7 +59,7 @@ function Skeleton() {
 }
 
 /* ── Main component ────────────────────────────────────────────────────────── */
-export default function MediaGalleryVideos({ chatId }) {
+export default function MediaGalleryVideos({ chatId, isGroup }) {
   const [items,    setItems]    = useState([]);
   const [page,     setPage]     = useState(1);
   const [hasMore,  setHasMore]  = useState(true);
@@ -77,7 +77,7 @@ export default function MediaGalleryVideos({ chatId }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/messages/media/${chatId}?type=video&page=${p}&limit=18`);
+      const res = await api.get(`/messages/media/${chatId}?type=video&page=${p}&limit=18${isGroup ? '&isGroup=true' : ''}`);
       const { messages, totalPages } = res.data;
       setItems(prev => p === 1 ? messages : [...prev, ...messages]);
       setHasMore(p < totalPages);

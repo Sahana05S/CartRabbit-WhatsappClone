@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { LogOut, MessageCircle, Search, Sun, Moon, Settings } from 'lucide-react';
+import { LogOut, MessageCircle, Search, Sun, Moon, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { getInitials } from '../../utils/formatTime';
 import ChatList from './ChatList';
+import CreateGroupModal from './CreateGroupModal';
 
 export default function Sidebar({ selectedUser, onSelectUser }) {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [search, setSearch] = useState('');
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   return (
-    <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-secondary border-r border-border h-full flex-shrink-0 transition-colors">
+    <aside className="w-[320px] min-w-[280px] flex flex-col bg-bg-secondary border-r border-border h-full flex-shrink-0 transition-colors relative">
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-border flex-shrink-0">
@@ -35,6 +37,14 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
         </div>
 
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowGroupModal(true)}
+            title="New Group"
+            className="p-2 text-text-muted hover:text-accent-light hover:bg-bg-hover rounded-lg transition-all duration-200 flex-shrink-0"
+          >
+            <Users className="w-4 h-4" />
+          </button>
+
           <button
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
@@ -82,8 +92,20 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
           search={search}
           selectedUser={selectedUser}
           onSelectUser={onSelectUser}
+          // trigger a reload when group created
+          key={showGroupModal ? 'paused' : 'active'}
         />
       </div>
+
+      {showGroupModal && (
+        <CreateGroupModal
+          onClose={() => setShowGroupModal(false)}
+          onGroupCreated={(group) => {
+            setShowGroupModal(false);
+            onSelectUser(group); // Open the new group right away
+          }}
+        />
+      )}
     </aside>
   );
 }

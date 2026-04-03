@@ -10,7 +10,19 @@ const messageSchema = new mongoose.Schema(
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: function() {
+        return this.chatType === 'direct';
+      },
+    },
+    chatType: {
+      type: String,
+      enum: ['direct', 'group'],
+      default: 'direct',
+    },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+      index: true,
     },
     text: {
       type: String,
@@ -41,7 +53,13 @@ const messageSchema = new mongoose.Schema(
       enum: ['sent', 'delivered', 'read'],
       default: 'sent',
     },
-    readAt: { type: Date, default: null },
+    readAt: { type: Date, default: null }, // for direct messages
+    readBy: [ // for group messages ("Seen by")
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        readAt: { type: Date, default: Date.now },
+      }
+    ],
     reactions: [
       {
         userId: {
@@ -68,5 +86,7 @@ const messageSchema = new mongoose.Schema(
 // Compound indexes for fast conversation lookups in both directions
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: 1 });
 messageSchema.index({ receiverId: 1, senderId: 1, createdAt: 1 });
+// Index for group queries
+messageSchema.index({ groupId: 1, createdAt: 1 });
 
 module.exports = mongoose.model('Message', messageSchema);

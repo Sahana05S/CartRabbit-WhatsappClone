@@ -4,17 +4,23 @@ const { getIO } = require('../socket/socketHandler');
 // POST /api/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, replyTo } = req.body;
+    const { receiverId, text, replyTo, isGroup } = req.body;
     const senderId = req.user._id;
 
     if (!receiverId) {
-      return res.status(400).json({ success: false, message: 'Receiver is required.' });
+      return res.status(400).json({ success: false, message: 'Receiver/Group is required.' });
     }
     if (!text || !text.trim()) {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
-    const messageData = { senderId, receiverId, text: text.trim() };
+    const messageData = { senderId, text: text.trim() };
+    if (isGroup) {
+      messageData.chatType = 'group';
+      messageData.groupId = receiverId;
+    } else {
+      messageData.receiverId = receiverId;
+    }
 
     // Attach reply metadata if provided
     if (replyTo && replyTo.messageId) {
@@ -34,10 +40,14 @@ const sendMessage = async (req, res) => {
       { path: 'receiverId', select: 'username avatarColor' },
     ]);
 
-    // Emit real-time message to receiver and sender (for multi-device sync)
+    // Emit real-time message
     const io = getIO();
-    io.to(receiverId.toString()).emit('newMessage', populated);
-    io.to(senderId.toString()).emit('newMessage', populated);
+    if (isGroup) {
+      io.to(receiverId.toString()).emit('newMessage', populated);
+    } else {
+      io.to(receiverId.toString()).emit('newMessage', populated);
+      io.to(senderId.toString()).emit('newMessage', populated);
+    }
 
     res.status(201).json({ success: true, message: populated });
   } catch (error) {
@@ -50,16 +60,22 @@ const sendMessage = async (req, res) => {
 const getMessages = async (req, res) => {
   try {
     const senderId = req.user._id;
-    const { userId: receiverId } = req.params;
+    const { userId: targetId } = req.params;
+    const { isGroup } = req.query;
 
-    const messages = await Message.find({
-      $or: [
-        { senderId, receiverId },
-        { senderId: receiverId, receiverId: senderId },
-      ],
-      // Exclude messages the requester deleted for themselves
-      deletedFor: { $ne: senderId },
-    })
+    let query = { deletedFor: { $ne: senderId } };
+    if (isGroup === 'true') {
+      query.chatType = 'group';
+      query.groupId = targetId;
+    } else {
+      query.chatType = 'direct';
+      query.$or = [
+        { senderId, receiverId: targetId },
+        { senderId: targetId, receiverId: senderId },
+      ];
+    }
+
+    const messages = await Message.find(query)
       .sort({ createdAt: 1 })
       .populate('senderId', 'username avatarColor')
       .populate('receiverId', 'username avatarColor');
@@ -74,21 +90,39 @@ const getMessages = async (req, res) => {
 // PUT /api/messages/mark-read/:senderId
 const markMessagesAsRead = async (req, res) => {
   try {
-    const receiverId = req.user._id;
-    const senderId = req.params.senderId;
+    const userId = req.user._id;
+    const targetId = req.params.senderId;
+    const { isGroup } = req.query;
     const now = new Date();
 
-    await Message.updateMany(
-      { senderId, receiverId, status: { $ne: 'read' } },
-      { $set: { status: 'read', readAt: now } }
-    );
-
-    // Emit socket event to sender so their UI updates (include readAt for seen timestamp)
     const io = getIO();
-    io.to(senderId.toString()).emit('messagesRead', { 
-      receiverId: receiverId.toString(),
-      readAt: now.toISOString(),
-    });
+
+    if (isGroup === 'true') {
+      // Mark group messages as read
+      const messagesToUpdate = await Message.find({
+        groupId: targetId,
+        senderId: { $ne: userId },
+        'readBy.user': { $ne: userId }
+      });
+      
+      if (messagesToUpdate.length > 0) {
+        await Message.updateMany(
+          { _id: { $in: messagesToUpdate.map(m => m._id) } },
+          { $push: { readBy: { user: userId, readAt: now } } }
+        );
+        io.to(targetId).emit('groupMessageRead', { groupId: targetId, userId: userId });
+      }
+    } else {
+      // Direct message logic
+      await Message.updateMany(
+        { senderId: targetId, receiverId: userId, status: { $ne: 'read' } },
+        { $set: { status: 'read', readAt: now } }
+      );
+      io.to(targetId.toString()).emit('messagesRead', { 
+        receiverId: userId.toString(),
+        readAt: now.toISOString(),
+      });
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -114,8 +148,10 @@ const reactToMessage = async (req, res) => {
     }
 
     // Authorization check
-    if (message.senderId.toString() !== userId.toString() && message.receiverId.toString() !== userId.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    if (message.chatType !== 'group') {
+      if (message.senderId.toString() !== userId.toString() && message.receiverId.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Not authorized.' });
+      }
     }
 
     const existingReactionIndex = message.reactions.findIndex(r => r.userId.toString() === userId.toString());
@@ -135,12 +171,16 @@ const reactToMessage = async (req, res) => {
 
     await message.save();
 
-    // Emit socket event to both sender and receiver
     const io = getIO();
     const payload = { messageId, reactions: message.reactions };
-    io.to(message.senderId.toString()).emit('messageReaction', payload);
-    if (message.senderId.toString() !== message.receiverId.toString()) {
-      io.to(message.receiverId.toString()).emit('messageReaction', payload);
+    
+    if (message.chatType === 'group') {
+      io.to(message.groupId.toString()).emit('messageReaction', payload);
+    } else {
+      io.to(message.senderId.toString()).emit('messageReaction', payload);
+      if (message.senderId.toString() !== message.receiverId.toString()) {
+        io.to(message.receiverId.toString()).emit('messageReaction', payload);
+      }
     }
 
     res.json({ success: true, reactions: message.reactions });
@@ -160,8 +200,10 @@ const deleteForMe = async (req, res) => {
     if (!message) return res.status(404).json({ success: false, message: 'Message not found.' });
 
     // Must be a participant
-    if (message.senderId.toString() !== userId.toString() && message.receiverId.toString() !== userId.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    if (message.chatType !== 'group') {
+      if (message.senderId.toString() !== userId.toString() && message.receiverId.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Not authorized.' });
+      }
     }
 
     // Idempotent — add only if not already present
@@ -196,11 +238,15 @@ const deleteForEveryone = async (req, res) => {
     message.deletedAt = new Date();
     await message.save();
 
-    // Emit to both participants so their UI updates instantly
+    // Emit to participants so their UI updates instantly
     const io = getIO();
     const payload = { messageId: message._id.toString() };
-    io.to(message.senderId.toString()).emit('messageDeletedForEveryone', payload);
-    io.to(message.receiverId.toString()).emit('messageDeletedForEveryone', payload);
+    if (message.chatType === 'group') {
+      io.to(message.groupId.toString()).emit('messageDeletedForEveryone', payload);
+    } else {
+      io.to(message.senderId.toString()).emit('messageDeletedForEveryone', payload);
+      io.to(message.receiverId.toString()).emit('messageDeletedForEveryone', payload);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -212,12 +258,12 @@ const deleteForEveryone = async (req, res) => {
 // POST /api/messages/attachment
 const sendAttachment = async (req, res) => {
   try {
-    const { receiverId, caption, replyTo: replyToRaw } = req.body;
+    const { receiverId, caption, replyTo: replyToRaw, isGroup } = req.body;
     const senderId = req.user._id;
     const file     = req.file;
 
     if (!receiverId) {
-      return res.status(400).json({ success: false, message: 'Receiver is required.' });
+      return res.status(400).json({ success: false, message: 'Receiver/Group is required.' });
     }
     if (!file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -228,7 +274,6 @@ const sendAttachment = async (req, res) => {
 
     const messageData = {
       senderId,
-      receiverId,
       text:        caption ? caption.trim().substring(0, 200) : '',
       messageType: isImage ? 'image' : 'file',
       attachment: {
@@ -238,6 +283,13 @@ const sendAttachment = async (req, res) => {
         fileSize:  file.size,
       },
     };
+
+    if (isGroup) {
+      messageData.chatType = 'group';
+      messageData.groupId = receiverId;
+    } else {
+      messageData.receiverId = receiverId;
+    }
 
     // Attach reply metadata if provided
     if (replyToRaw) {
@@ -260,8 +312,12 @@ const sendAttachment = async (req, res) => {
     ]);
 
     const io = getIO();
-    io.to(receiverId.toString()).emit('newMessage', populated);
-    io.to(senderId.toString()).emit('newMessage', populated);
+    if (isGroup) {
+      io.to(receiverId.toString()).emit('newMessage', populated);
+    } else {
+      io.to(receiverId.toString()).emit('newMessage', populated);
+      io.to(senderId.toString()).emit('newMessage', populated);
+    }
 
     res.status(201).json({ success: true, message: populated });
   } catch (error) {
@@ -293,11 +349,13 @@ const forwardMessage = async (req, res) => {
     }
 
     // Must be a participant in the original chat
-    if (
-      original.senderId.toString() !== senderId.toString() &&
-      original.receiverId.toString() !== senderId.toString()
-    ) {
-      return res.status(403).json({ success: false, message: 'Not authorized to forward this message.' });
+    if (original.chatType !== 'group') {
+      if (
+        original.senderId.toString() !== senderId.toString() &&
+        original.receiverId?.toString() !== senderId.toString()
+      ) {
+        return res.status(403).json({ success: false, message: 'Not authorized to forward this message.' });
+      }
     }
 
     const io = getIO();
@@ -352,8 +410,10 @@ const toggleStar = async (req, res) => {
     if (!message) return res.status(404).json({ success: false, message: 'Message not found.' });
 
     // Must be a participant
-    if (message.senderId.toString() !== userId.toString() && message.receiverId.toString() !== userId.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    if (message.chatType !== 'group') {
+      if (message.senderId.toString() !== userId.toString() && message.receiverId?.toString() !== userId.toString()) {
+        return res.status(403).json({ success: false, message: 'Not authorized.' });
+      }
     }
 
     const alreadyStarred = message.starredBy.map(id => id.toString()).includes(userId.toString());
@@ -380,9 +440,11 @@ const getStarredMessages = async (req, res) => {
     const query = { starredBy: userId, isDeletedForEveryone: false };
 
     if (chatId) {
-       query.$or = [
+      // Assuming chatId here is a direct chat. In a real system, you'd check query.isGroup too for starred group messages
+      query.$or = [
         { senderId: userId, receiverId: chatId },
         { senderId: chatId, receiverId: userId },
+        { groupId: chatId } // safely handles if chatId happened to be a group
       ];
     }
 
@@ -403,22 +465,29 @@ const getMediaMessages = async (req, res) => {
   try {
     const userId = req.user._id;
     const { userId: otherId } = req.params;
-    const { type = 'image', page = 1, limit = 24 } = req.query;
+    const { isGroup, type = 'image', page = 1, limit = 24 } = req.query;
 
     const pageNum  = Math.max(1, parseInt(page,  10) || 1);
     const limitNum = Math.min(50, parseInt(limit, 10) || 24);
     const skip     = (pageNum - 1) * limitNum;
 
-    // Base query — only messages between these two users that have an attachment
+    // Base query — only messages between these two users or in this group that have an attachment
     const base = {
-      $or: [
-        { senderId: userId, receiverId: otherId },
-        { senderId: otherId, receiverId: userId },
-      ],
       deletedFor:           { $ne: userId },
       isDeletedForEveryone: false,
       'attachment.fileUrl': { $ne: null },
     };
+
+    if (isGroup === 'true') {
+      base.chatType = 'group';
+      base.groupId = otherId;
+    } else {
+      base.chatType = 'direct';
+      base.$or = [
+        { senderId: userId, receiverId: otherId },
+        { senderId: otherId, receiverId: userId },
+      ];
+    }
 
     // Type-specific filter
     if (type === 'image') {
@@ -465,17 +534,20 @@ const getMessageById = async (req, res) => {
 
     const message = await Message.findById(messageId)
       .populate('senderId',   'username avatarColor')
-      .populate('receiverId', 'username avatarColor');
+      .populate('receiverId', 'username avatarColor')
+      .populate('readBy.user', 'username avatarColor');
 
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found.' });
     }
 
     // Only participants may view message info
-    const senderId_   = message.senderId?._id?.toString()   ?? message.senderId?.toString();
-    const receiverId_ = message.receiverId?._id?.toString() ?? message.receiverId?.toString();
-    if (userId.toString() !== senderId_ && userId.toString() !== receiverId_) {
-      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    if (message.chatType !== 'group') {
+      const senderId_   = message.senderId?._id?.toString()   ?? message.senderId?.toString();
+      const receiverId_ = message.receiverId?._id?.toString() ?? message.receiverId?.toString();
+      if (userId.toString() !== senderId_ && userId.toString() !== receiverId_) {
+        return res.status(403).json({ success: false, message: 'Not authorized.' });
+      }
     }
 
     res.json({ success: true, message });

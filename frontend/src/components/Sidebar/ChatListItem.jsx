@@ -1,6 +1,6 @@
 import { getInitials, formatPreviewTime } from '../../utils/formatTime';
 import { useAuth } from '../../context/AuthContext';
-import { Pin, Archive, PinOff, ArchiveRestore } from 'lucide-react';
+import { Pin, Archive, PinOff, ArchiveRestore, Users } from 'lucide-react';
 
 export default function ChatListItem({ user, isActive, isOnline, onClick, onTogglePin, onToggleArchive }) {
   const { currentUser } = useAuth();
@@ -32,8 +32,9 @@ export default function ChatListItem({ user, isActive, isOnline, onClick, onTogg
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline mb-0.5">
-          <h3 className={`text-sm truncate pr-2 ${user.unreadCount > 0 ? 'font-bold text-accent' : 'font-semibold text-text-primary'}`}>
-            {user.username}
+          <h3 className={`flex items-center gap-1.5 text-sm truncate pr-2 ${user.unreadCount > 0 ? 'font-bold text-accent' : 'font-semibold text-text-primary'}`}>
+            {user.isGroup && <Users className="w-3.5 h-3.5 flex-shrink-0 text-text-muted opacity-80" />}
+            <span className="truncate">{user.username}</span>
           </h3>
           {lastMessage?.createdAt && (
             <span className={`text-[10px] flex-shrink-0 ml-2 ${user.unreadCount > 0 ? 'text-accent font-bold' : 'text-text-muted'}`}>

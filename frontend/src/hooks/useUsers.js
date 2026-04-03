@@ -30,10 +30,25 @@ export const useUsers = (selectedUserId) => {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await api.get('/users');
-      setUsers(data.users);
+      
+      const [usersRes, groupsRes] = await Promise.all([
+        api.get('/users'),
+        api.get('/groups')
+      ]);
+      
+      const allChats = [...usersRes.data.users, ...groupsRes.data.groups];
+      
+      // Sort unified list
+      allChats.sort((a, b) => {
+        const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+        const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+        if (dateA !== dateB) return dateB - dateA;
+        return a.username.localeCompare(b.username);
+      });
+
+      setUsers(allChats);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load users.');
+      setError(err.response?.data?.message || 'Failed to load chats.');
     } finally {
       setLoading(false);
     }
@@ -51,31 +66,32 @@ export const useUsers = (selectedUserId) => {
         const msgSenderId = message.senderId?._id || message.senderId;
         const msgReceiverId = message.receiverId?._id || message.receiverId;
 
-        const otherUserId = msgSenderId === currentUser._id ? msgReceiverId : msgSenderId;
+        const isGroupMsg = message.chatType === 'group';
+        const otherChatId = isGroupMsg ? message.groupId : (msgSenderId === currentUser._id ? msgReceiverId : msgSenderId);
 
-        const userIndex = prevUsers.findIndex((u) => u._id === otherUserId);
-        if (userIndex === -1) return prevUsers; 
+        const chatIndex = prevUsers.findIndex((u) => u._id === otherChatId);
+        if (chatIndex === -1) return prevUsers; 
 
-        let newUnreadCount = prevUsers[userIndex].unreadCount || 0;
+        let newUnreadCount = prevUsers[chatIndex].unreadCount || 0;
         
         const isIncoming = msgSenderId !== currentUser._id;
-        const isNotActiveChat = otherUserId !== selectedUserIdRef.current;
+        const isNotActiveChat = otherChatId !== selectedUserIdRef.current;
         const isTabHidden = document.hidden;
         
         if (isIncoming && (isNotActiveChat || isTabHidden)) {
           newUnreadCount += 1;
           
           playSubtleBeep();
-          showBrowserNotification(message, prevUsers[userIndex].username);
+          showBrowserNotification(message, prevUsers[chatIndex].username);
         }
 
         const updatedUser = { 
-          ...prevUsers[userIndex], 
+          ...prevUsers[chatIndex], 
           lastMessage: message,
           unreadCount: newUnreadCount
         };
         
-        const newUsers = prevUsers.filter((u) => u._id !== otherUserId);
+        const newUsers = prevUsers.filter((u) => u._id !== otherChatId);
         
         return [updatedUser, ...newUsers];
       });

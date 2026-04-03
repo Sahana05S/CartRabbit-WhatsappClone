@@ -3,29 +3,35 @@ import api from '../api/axios';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
-export const useMessages = (selectedUserId) => {
+export const useMessages = (selectedChat) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { socket } = useSocket();
   const { currentUser } = useAuth();
-  const selectedUserIdRef = useRef(selectedUserId);
+  
+  const selectedChatId = selectedChat?._id;
+  const isGroup = selectedChat?.isGroup;
+  
+  const selectedChatRef = useRef(selectedChat);
 
   // Keep ref in sync so the socket listener always has current value
   useEffect(() => {
-    selectedUserIdRef.current = selectedUserId;
-  }, [selectedUserId]);
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   const fetchMessages = useCallback(async () => {
-    if (!selectedUserId) return;
+    if (!selectedChatId) return;
     try {
       setLoading(true);
       setError(null);
-      const { data } = await api.get(`/messages/${selectedUserId}`);
+      
+      const query = isGroup ? '?isGroup=true' : '';
+      const { data } = await api.get(`/messages/${selectedChatId}${query}`);
 
       const hydratedMessages = data.messages.map(m => {
         const sender = m.senderId?._id || m.senderId;
-        if (sender === selectedUserId && m.status !== 'read') {
+        if (sender === selectedChatId && m.status !== 'read' && !isGroup) {
           return { ...m, status: 'read', readAt: m.readAt ?? new Date().toISOString() };
         }
         return m;
@@ -37,17 +43,18 @@ export const useMessages = (selectedUserId) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedUserId]);
+  }, [selectedChatId, isGroup]);
 
   // Refetch when selected user changes
   useEffect(() => {
     setMessages([]);
     fetchMessages();
 
-    if (selectedUserId) {
-      api.put(`/messages/mark-read/${selectedUserId}`).catch(console.error);
+    if (selectedChatId) {
+      const query = isGroup ? '?isGroup=true' : '';
+      api.put(`/messages/mark-read/${selectedChatId}${query}`).catch(console.error);
     }
-  }, [fetchMessages, selectedUserId]);
+  }, [fetchMessages, selectedChatId, isGroup]);
 
   // Socket listener for incoming messages
   useEffect(() => {
@@ -56,24 +63,29 @@ export const useMessages = (selectedUserId) => {
     const handleNewMessage = (message) => {
       const msgSenderId = message.senderId?._id || message.senderId;
       const msgReceiverId = message.receiverId?._id || message.receiverId;
-      const activeChatId = selectedUserIdRef.current;
+      const activeChat = selectedChatRef.current;
+      if (!activeChat) return;
+
+      const isGroupMsg = message.chatType === 'group';
+      const msgChatId = isGroupMsg ? message.groupId : (msgSenderId === currentUser._id ? msgReceiverId : msgSenderId);
 
       // Check if message belongs to the current open conversation
-      if (activeChatId === msgSenderId || activeChatId === msgReceiverId) {
+      if (activeChat._id === msgChatId) {
         setMessages((prev) => {
           // Prevent duplicates (in case of same tab optimistic appending)
           const isDuplicate = prev.some((m) => m._id === message._id);
           if (isDuplicate) return prev;
 
-          return [...prev, { ...message, status: msgSenderId !== currentUser._id ? 'read' : message.status }];
+          return [...prev, { ...message, status: (msgSenderId !== currentUser._id && !isGroupMsg) ? 'read' : message.status }];
         });
 
-        if (msgSenderId === activeChatId) {
-          api.put(`/messages/mark-read/${msgSenderId}`).catch(console.error);
+        if (msgSenderId !== currentUser._id) {
+          const query = activeChat.isGroup ? '?isGroup=true' : '';
+          api.put(`/messages/mark-read/${activeChat._id}${query}`).catch(console.error);
         }
       } else {
         // Message belongs to a different chat, emit delivered
-        if (msgSenderId !== currentUser._id) {
+        if (msgSenderId !== currentUser._id && !isGroupMsg) {
           socket.emit('messageDelivered', message._id);
         }
       }
@@ -84,13 +96,28 @@ export const useMessages = (selectedUserId) => {
     };
 
     const handleMessagesRead = ({ receiverId, readAt }) => {
-      if (receiverId === selectedUserIdRef.current) {
+      if (receiverId === selectedChatRef.current?._id && !selectedChatRef.current?.isGroup) {
         const ts = readAt ?? new Date().toISOString();
         setMessages((prev) => prev.map(m => {
           const mReceiver = m.receiverId?._id || m.receiverId;
           return mReceiver === receiverId && m.status !== 'read'
             ? { ...m, status: 'read', readAt: m.readAt ?? ts }
             : m;
+        }));
+      }
+    };
+
+    const handleGroupMessageRead = ({ groupId, userId }) => {
+      if (groupId === selectedChatRef.current?._id) {
+        // append user to readBy arrays if not already present
+        setMessages((prev) => prev.map(m => {
+          if (m.senderId === currentUser._id || m.senderId?._id === currentUser._id) {
+             const readBy = m.readBy || [];
+             if (!readBy.some(r => r.user === userId || r.user?._id === userId)) {
+               return { ...m, readBy: [...readBy, { user: userId, readAt: new Date().toISOString() }] };
+             }
+          }
+          return m;
         }));
       }
     };
@@ -109,12 +136,14 @@ export const useMessages = (selectedUserId) => {
     socket.on('newMessage', handleNewMessage);
     socket.on('messageDelivered', handleMessageDelivered);
     socket.on('messagesRead', handleMessagesRead);
+    socket.on('groupMessageRead', handleGroupMessageRead);
     socket.on('messageReaction', handleMessageReaction);
     socket.on('messageDeletedForEveryone', handleMessageDeletedForEveryone);
     return () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('messageDelivered', handleMessageDelivered);
       socket.off('messagesRead', handleMessagesRead);
+      socket.off('groupMessageRead', handleGroupMessageRead);
       socket.off('messageReaction', handleMessageReaction);
       socket.off('messageDeletedForEveryone', handleMessageDeletedForEveryone);
     };

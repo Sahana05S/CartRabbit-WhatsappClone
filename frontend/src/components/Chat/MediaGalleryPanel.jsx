@@ -10,7 +10,7 @@ const TABS = [
   { id: 'files',  label: 'Documents', Icon: Paperclip  },
 ];
 
-export default function MediaGalleryPanel({ chatId, onClose }) {
+export default function MediaGalleryPanel({ chatId, isGroup, onClose }) {
   const [activeTab, setActiveTab] = useState('images');
 
   // Reset to photos tab whenever we switch to a different chat
@@ -65,9 +65,9 @@ export default function MediaGalleryPanel({ chatId, onClose }) {
 
       {/* ── Tab content ─────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        {activeTab === 'images' && <MediaGalleryImages chatId={chatId} />}
-        {activeTab === 'videos' && <MediaGalleryVideos chatId={chatId} />}
-        {activeTab === 'files'  && <MediaGalleryFiles  chatId={chatId} />}
+        {activeTab === 'images' && <MediaGalleryImages chatId={chatId} isGroup={isGroup} />}
+        {activeTab === 'videos' && <MediaGalleryVideos chatId={chatId} isGroup={isGroup} />}
+        {activeTab === 'files'  && <MediaGalleryFiles  chatId={chatId} isGroup={isGroup} />}
       </div>
     </div>
   );

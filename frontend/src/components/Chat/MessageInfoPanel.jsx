@@ -166,26 +166,50 @@ export default function MessageInfoPanel({ messageId, onClose }) {
                     value={formatInfoTime(info.createdAt) ?? '—'}
                   />
 
-                  {/* Delivered — stored as message.deliveredAt if present, else inferred from status */}
-                  <InfoRow
-                    icon={CheckCheck}
-                    iconClass={info.status === 'delivered' || info.status === 'read' ? 'text-text-muted' : 'text-text-muted/40'}
-                    label="Delivered"
-                    value={
-                      formatInfoTime(info.deliveredAt) ??
-                      (info.status === 'delivered' || info.status === 'read' ? 'Yes' : '—')
-                    }
-                    valueMuted={!info.deliveredAt && !(info.status === 'delivered' || info.status === 'read')}
-                  />
+                  {info.chatType === 'group' ? (
+                    <div className="py-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <CheckCheck className={`w-4 h-4 flex-shrink-0 ${info.readBy?.length > 0 ? 'text-blue-400' : 'text-text-muted/40'}`} />
+                          <span className="text-sm text-text-secondary">Seen by</span>
+                        </div>
+                        <span className="text-sm font-medium text-text-primary">{info.readBy?.length || 0}</span>
+                      </div>
+                      {info.readBy?.length > 0 && (
+                        <div className="pl-7 space-y-1.5 mt-2">
+                          {info.readBy.map((r, i) => (
+                            <div key={i} className="flex justify-between items-center text-xs">
+                              <span className="text-text-primary">{r.user?.username || 'Unknown'}</span>
+                              <span className="text-text-muted">{formatInfoTime(r.readAt)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Delivered */}
+                      <InfoRow
+                        icon={CheckCheck}
+                        iconClass={info.status === 'delivered' || info.status === 'read' ? 'text-text-muted' : 'text-text-muted/40'}
+                        label="Delivered"
+                        value={
+                          formatInfoTime(info.deliveredAt) ??
+                          (info.status === 'delivered' || info.status === 'read' ? 'Yes' : '—')
+                        }
+                        valueMuted={!info.deliveredAt && !(info.status === 'delivered' || info.status === 'read')}
+                      />
 
-                  {/* Seen / Read */}
-                  <InfoRow
-                    icon={CheckCheck}
-                    iconClass={info.status === 'read' ? 'text-blue-400' : 'text-text-muted/40'}
-                    label="Seen"
-                    value={formatInfoTime(info.readAt) ?? '—'}
-                    valueMuted={!info.readAt}
-                  />
+                      {/* Seen / Read */}
+                      <InfoRow
+                        icon={CheckCheck}
+                        iconClass={info.status === 'read' ? 'text-blue-400' : 'text-text-muted/40'}
+                        label="Seen"
+                        value={formatInfoTime(info.readAt) ?? '—'}
+                        valueMuted={!info.readAt}
+                      />
+                    </>
+                  )}
                 </div>
               </section>
 

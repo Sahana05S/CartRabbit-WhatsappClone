@@ -12,7 +12,7 @@ import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ChatWindow({ selectedUser }) {
-  const { messages, loading, error, addMessage, removeMessageLocally, updateMessageStar } = useMessages(selectedUser?._id);
+  const { messages, loading, error, addMessage, removeMessageLocally, updateMessageStar } = useMessages(selectedUser);
   const { socket } = useSocket();
   const { currentUser } = useAuth();
   const [isTyping, setIsTyping] = useState(false);
@@ -37,8 +37,21 @@ export default function ChatWindow({ selectedUser }) {
   useEffect(() => {
     if (!socket || !selectedUser) return;
 
-    const handleTyping     = (id) => { if (id === selectedUser._id) setIsTyping(true);  };
-    const handleStopTyping = (id) => { if (id === selectedUser._id) setIsTyping(false); };
+    const handleTyping = (data) => {
+      const chatId = typeof data === 'string' ? data : data.chatId;
+      if (chatId === selectedUser._id) {
+        if (typeof data === 'object' && data.isGroup && data.username) {
+          setIsTyping(`${data.username} is typing…`);
+        } else {
+          setIsTyping('typing…');
+        }
+      }
+    };
+    
+    const handleStopTyping = (data) => {
+      const chatId = typeof data === 'string' ? data : data.chatId;
+      if (chatId === selectedUser._id) setIsTyping(false);
+    };
 
     socket.on('typing',     handleTyping);
     socket.on('stopTyping', handleStopTyping);
@@ -111,7 +124,7 @@ export default function ChatWindow({ selectedUser }) {
         <div className="h-0 relative z-20">
           {isTyping && (
             <div className="absolute bottom-2 left-4 md:left-6 text-[13px] text-text-muted italic flex items-center gap-1.5 bg-bg-panel/90 px-4 py-1.5 rounded-full border border-white/5 backdrop-blur-md shadow-sm animate-fade-in">
-              {selectedUser.username} is typing
+              {typeof isTyping === 'string' ? isTyping : `${selectedUser.username} is typing`}
               <span className="flex gap-0.5 pt-1.5">
                 <span className="w-1 h-1 bg-text-muted rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                 <span className="w-1 h-1 bg-text-muted rounded-full animate-bounce [animation-delay:-0.15s]"></span>
@@ -126,6 +139,7 @@ export default function ChatWindow({ selectedUser }) {
 
         <MessageInput
           receiverId={selectedUser._id}
+          isGroup={selectedUser.isGroup}
           onMessageSent={(newMsg) => addMessage(newMsg)}
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
@@ -144,10 +158,10 @@ export default function ChatWindow({ selectedUser }) {
         />
       )}
 
-      {/* Media Gallery Panel */}
       {isGalleryOpen && (
         <MediaGalleryPanel
           chatId={selectedUser._id}
+          isGroup={selectedUser.isGroup}
           onClose={() => setIsGalleryOpen(false)}
         />
       )}

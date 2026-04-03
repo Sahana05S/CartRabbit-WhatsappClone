@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
-import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star, Images } from 'lucide-react';
+import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star, Images, Users } from 'lucide-react';
 
 export default function ChatHeader({ user, searchProps, onOpenStarred, isGalleryOpen, onOpenGallery, isTyping }) {
   const { onlineUsers, socket } = useSocket();
@@ -67,24 +67,27 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
           </div>
 
           <div>
-            <h2 className="text-base font-semibold text-text-primary leading-tight">
+            <h2 className="text-base font-semibold text-text-primary leading-tight flex items-center gap-1.5">
+              {user.isGroup && <Users className="w-4 h-4 text-text-muted opacity-80" />}
               {user.username}
             </h2>
             {/* Priority: typing > online > last seen */}
             <p className={`text-xs mt-0.5 transition-all duration-200 ${
               isTyping
                 ? 'text-accent-light italic'
-                : isOnline
+                : (isOnline && !user.isGroup)
                   ? 'text-accent'
                   : 'text-text-muted'
             }`}>
               {isTyping
-                ? 'typing…'
-                : isOnline
-                  ? 'online'
-                  : lastSeen
-                    ? `last seen ${formatLastSeen(lastSeen)}`
-                    : 'offline'
+                ? (typeof isTyping === 'string' ? isTyping : 'typing…')
+                : user.isGroup
+                  ? `${user.members?.length || 0} members`
+                  : isOnline
+                    ? 'online'
+                    : lastSeen
+                      ? `last seen ${formatLastSeen(lastSeen)}`
+                      : 'offline'
               }
             </p>
           </div>
@@ -92,13 +95,17 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
 
         {/* Action buttons */}
         <div className="flex items-center gap-3">
-          <button className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors">
-            <Video className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors">
-            <Phone className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-white/10 mx-1" />
+          {!user.isGroup && (
+            <>
+              <button className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors">
+                <Video className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors">
+                <Phone className="w-5 h-5" />
+              </button>
+              <div className="w-px h-6 bg-white/10 mx-1" />
+            </>
+          )}
           {/* Search toggle */}
           <button
             onClick={isOpen ? closeSearch : openSearch}

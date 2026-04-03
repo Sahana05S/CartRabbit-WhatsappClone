@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Search, Send, Check, Loader2 } from 'lucide-react';
+import { X, Search, Send, Check, Loader2, Users } from 'lucide-react';
 import api from '../../api/axios';
 import { getInitials } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
@@ -128,9 +128,12 @@ export default function ForwardModal({ message, onClose }) {
                   </div>
 
                   {/* Name */}
-                  <span className={`flex-1 text-sm font-medium truncate ${isSelected ? 'text-accent-light' : 'text-text-primary'}`}>
-                    {user.username}
-                  </span>
+                  <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                    {user.isGroup && <Users className="w-3.5 h-3.5 flex-shrink-0 text-text-muted opacity-80" />}
+                    <span className={`text-sm font-medium truncate ${isSelected ? 'text-accent-light' : 'text-text-primary'}`}>
+                      {user.username}
+                    </span>
+                  </div>
 
                   {/* Checkmark */}
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0

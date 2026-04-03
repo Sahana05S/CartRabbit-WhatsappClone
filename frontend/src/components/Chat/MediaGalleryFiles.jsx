@@ -107,7 +107,7 @@ function RowSkeleton() {
 }
 
 /* ── Main component ─────────────────────────────────────────────────────────── */
-export default function MediaGalleryFiles({ chatId }) {
+export default function MediaGalleryFiles({ chatId, isGroup }) {
   const [items,   setItems]   = useState([]);
   const [page,    setPage]    = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -124,7 +124,7 @@ export default function MediaGalleryFiles({ chatId }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get(`/messages/media/${chatId}?type=file&page=${p}&limit=20`);
+      const res = await api.get(`/messages/media/${chatId}?type=file&page=${p}&limit=20${isGroup ? '&isGroup=true' : ''}`);
       const { messages, totalPages } = res.data;
       setItems(prev => p === 1 ? messages : [...prev, ...messages]);
       setHasMore(p < totalPages);
