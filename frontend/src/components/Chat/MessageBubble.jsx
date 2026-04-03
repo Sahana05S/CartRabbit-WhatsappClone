@@ -8,6 +8,7 @@ import AttachmentMessage from './AttachmentMessage';
 import HighlightText from './HighlightText';
 import ForwardModal from './ForwardModal';
 import MessageInfoPanel from './MessageInfoPanel';
+import AudioPlayer from './AudioPlayer';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -223,12 +224,18 @@ export default function MessageBubble({
             })()}
 
             {/* Message content */}
-            {message.messageType === 'image' || message.messageType === 'file'
-              ? <AttachmentMessage message={message} isSent={isSent} />
-              : <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
-                  <HighlightText text={message.text} query={searchQuery} />
-                </p>
-            }
+            {message.messageType === 'audio' ? (
+              <AudioPlayer 
+                url={message.attachment?.fileUrl} 
+                duration={message.attachment?.duration} 
+              />
+            ) : (message.messageType === 'image' || message.messageType === 'file') ? (
+              <AttachmentMessage message={message} isSent={isSent} />
+            ) : (
+              <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
+                <HighlightText text={message.text} query={searchQuery} />
+              </p>
+            )}
 
             {/* Time + read receipts + star indicator */}
             <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${isSent ? 'text-text-muted' : 'text-text-muted'}`}>

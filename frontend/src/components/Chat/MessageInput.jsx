@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, FileText, Image, Smile } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Image, Smile, Mic } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import AudioRecorder from './AudioRecorder';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
 
@@ -18,6 +19,7 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
   const [pendingFile,    setPendingFile]    = useState(null);   // { file, previewUrl, isImage }
   const [uploadError,    setUploadError]    = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isRecording,    setIsRecording]    = useState(false);
   const textareaRef  = useRef(null);
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
@@ -188,10 +190,43 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (socket) socket.emit('stopTyping', { receiverId, isGroup });
 
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendAudio = async (audioFile, duration) => {
+    try {
+      setSending(true);
+      setUploadError('');
+
+      const formData = new FormData();
+      formData.append('file',       audioFile);
+      formData.append('receiverId', receiverId);
+      formData.append('duration',   duration);
+      if (isGroup) formData.append('isGroup', 'true');
+
+      if (replyTo) {
+        formData.append('replyTo', JSON.stringify({
+          messageId:   replyTo._id,
+          senderId:    replyTo.senderId?._id || replyTo.senderId,
+          senderName:  replyTo.senderName,
+          previewText: replyTo.previewText || '',
+          messageType: replyTo.messageType || 'text',
+        }));
+      }
+
+      const { data } = await api.post('/messages/attachment', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      onMessageSent(data.message);
+      setIsRecording(false);
+      onCancelReply?.();
+
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to send. Please try again.';
-      setUploadError(msg);
-      console.error('Send error:', err);
+      console.error('Audio upload error:', err);
+      setUploadError('Failed to send voice message.');
     } finally {
       setSending(false);
     }
@@ -258,79 +293,99 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
       )}
 
       {/* Input row */}
-      <form onSubmit={handleSend} className="p-3 md:px-6 md:py-4 flex items-end gap-2 md:gap-4">
+      <div className="p-3 md:px-6 md:py-4 flex items-end gap-2 md:gap-4">
+        {isRecording ? (
+          <AudioRecorder 
+            onSend={handleSendAudio} 
+            onCancel={() => setIsRecording(false)} 
+          />
+        ) : (
+          <form onSubmit={handleSend} className="flex-1 flex items-end gap-2 md:gap-4">
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
-          onChange={handleFileSelect}
-        />
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+              onChange={handleFileSelect}
+            />
 
-        {/* Attachment button */}
-        <div className="flex gap-1 md:gap-2 mb-1.5 md:mb-2 text-text-muted relative" ref={emojiPickerRef}>
-          {showEmojiPicker && (
-            <div className="absolute bottom-full left-0 mb-4 z-50 animate-slide-up origin-bottom-left shadow-2xl">
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                theme="dark"
-                searchDisabled={false}
-                skinTonesDisabled={true}
-                lazyLoadEmojis={true}
-                width={300}
-                height={400}
-                autoFocusSearch={false}
+            {/* Attachment buttons */}
+            <div className="flex gap-1 md:gap-2 mb-1.5 md:mb-2 text-text-muted relative" ref={emojiPickerRef}>
+              {showEmojiPicker && (
+                <div className="absolute bottom-full left-0 mb-4 z-50 animate-slide-up origin-bottom-left shadow-2xl">
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiClick}
+                    theme="dark"
+                    searchDisabled={false}
+                    skinTonesDisabled={true}
+                    lazyLoadEmojis={true}
+                    width={300}
+                    height={400}
+                    autoFocusSearch={false}
+                  />
+                </div>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-accent-light bg-accent/10' : 'hover:text-accent-light hover:bg-white/5'}`}
+                title="Add emoji"
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`p-2 rounded-full transition-colors ${pendingFile ? 'text-accent-light bg-accent/10' : 'hover:text-accent-light hover:bg-white/5'}`}
+                title="Attach file"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Text area */}
+            <div className="flex-1 bg-bg-active rounded-xl flex items-center border border-transparent focus-within:border-border transition-all relative">
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={handleTextChange}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder={pendingFile ? 'Add a caption…' : 'Type a message…'}
+                rows={1}
+                className="w-full bg-transparent text-text-primary px-4 py-3 min-h-[48px] max-h-[120px] resize-none focus:outline-none placeholder:text-text-muted text-sm my-auto custom-scrollbar"
               />
             </div>
-          )}
-          
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker((prev) => !prev)}
-            className={`p-2 rounded-full transition-colors ${showEmojiPicker ? 'text-accent-light bg-accent/10' : 'hover:text-accent-light hover:bg-white/5'}`}
-            title="Add emoji"
-          >
-            <Smile className="w-5 h-5" />
-          </button>
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className={`p-2 rounded-full transition-colors ${pendingFile ? 'text-accent-light bg-accent/10' : 'hover:text-accent-light hover:bg-white/5'}`}
-            title="Attach file"
-          >
-            <Paperclip className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Text area */}
-        <div className="flex-1 bg-bg-active rounded-xl flex items-center border border-transparent focus-within:border-border transition-all relative">
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={handleTextChange}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={pendingFile ? 'Add a caption…' : 'Type a message…'}
-            rows={1}
-            className="w-full bg-transparent text-text-primary px-4 py-3 min-h-[48px] max-h-[120px] resize-none focus:outline-none placeholder:text-text-muted text-sm my-auto custom-scrollbar"
-          />
-        </div>
-
-        {/* Send button */}
-        <button
-          type="submit"
-          disabled={!canSend}
-          className="w-12 h-12 flex-shrink-0 bg-accent hover:bg-accent-dark text-white rounded-full flex items-center justify-center transition-all shadow-accent disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none hover:-translate-y-0.5 active:translate-y-0"
-        >
-          {sending
-            ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            : <Send className="w-5 h-5 ml-0.5" />
-          }
-        </button>
-      </form>
+            {/* Action button: Send or Mic */}
+            {canSend ? (
+              <button
+                type="submit"
+                disabled={sending}
+                className="w-12 h-12 flex-shrink-0 bg-accent hover:bg-accent-dark text-white rounded-full flex items-center justify-center transition-all shadow-accent active:scale-95"
+              >
+                {sending
+                  ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <Send className="w-5 h-5 ml-0.5" />
+                }
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsRecording(true)}
+                className="w-12 h-12 flex-shrink-0 bg-accent/10 hover:bg-accent/20 text-accent-light rounded-full flex items-center justify-center transition-all active:scale-95"
+                title="Voice message"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+            )}
+          </form>
+        )}
+      </div>
     </div>
   );
 }

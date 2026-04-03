@@ -61,4 +61,12 @@ export const formatLastSeen = (dateString) => {
     return `on ${dateLabel} at ${timeStr}`;
   }
 };
-
+/**
+ * Format seconds into mm:ss
+ */
+export const formatDuration = (seconds) => {
+  if (!seconds) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};

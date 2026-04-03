@@ -19,8 +19,8 @@ const ALLOWED_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   // Text
   'text/plain', 'text/csv',
-  // Archives
-  'application/zip', 'application/x-zip-compressed',
+  // Audio
+  'audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/x-m4a',
 ]);
 
 const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB

@@ -32,7 +32,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'file'],
+      enum: ['text', 'image', 'file', 'audio'],
       default: 'text',
     },
     attachment: {
@@ -40,6 +40,7 @@ const messageSchema = new mongoose.Schema(
       fileName:  { type: String,  default: null },
       mimeType:  { type: String,  default: null },
       fileSize:  { type: Number,  default: null },  // bytes
+      duration:  { type: Number,  default: null },  // seconds for audio
     },
     replyTo: {
       messageId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },

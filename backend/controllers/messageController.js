@@ -258,7 +258,7 @@ const deleteForEveryone = async (req, res) => {
 // POST /api/messages/attachment
 const sendAttachment = async (req, res) => {
   try {
-    const { receiverId, caption, replyTo: replyToRaw, isGroup } = req.body;
+    const { receiverId, caption, replyTo: replyToRaw, isGroup, duration } = req.body;
     const senderId = req.user._id;
     const file     = req.file;
 
@@ -270,17 +270,19 @@ const sendAttachment = async (req, res) => {
     }
 
     const isImage = file.mimetype.startsWith('image/');
+    const isAudio = file.mimetype.startsWith('audio/') || (file.mimetype === 'video/webm' && !caption); 
     const fileUrl = `/uploads/${file.filename}`;
 
     const messageData = {
       senderId,
       text:        caption ? caption.trim().substring(0, 200) : '',
-      messageType: isImage ? 'image' : 'file',
+      messageType: isImage ? 'image' : (isAudio ? 'audio' : 'file'),
       attachment: {
         fileUrl,
         fileName:  file.originalname,
         mimeType:  file.mimetype,
         fileSize:  file.size,
+        duration:  duration ? parseFloat(duration) : null,
       },
     };
 
@@ -377,6 +379,7 @@ const forwardMessage = async (req, res) => {
           fileName: original.attachment.fileName,
           mimeType: original.attachment.mimeType,
           fileSize: original.attachment.fileSize,
+          duration: original.attachment.duration,
         };
       }
 
