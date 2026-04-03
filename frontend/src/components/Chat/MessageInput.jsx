@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, FileText, Image, Smile, Mic } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
+import { Send, Paperclip, X, FileText, Image, Smile, Mic, Play, Box } from 'lucide-react';
+import GifPicker from './GifPicker';
 import AudioRecorder from './AudioRecorder';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
@@ -25,6 +27,8 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
   const emojiPickerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const { socket } = useSocket();
+  const { theme } = useTheme();
+  const { currentUser } = useAuth();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -190,6 +194,83 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (socket) socket.emit('stopTyping', { receiverId, isGroup });
 
+    } catch (err) {
+      console.error('Send message error:', err);
+      setUploadError('Failed to send message.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendGif = async (gif) => {
+    try {
+      setSending(true);
+      const payload = { 
+        receiverId, 
+        messageType: 'gif',
+        giphy: {
+          id: gif.id,
+          mediaUrl: gif.images.original.url,
+          previewUrl: gif.images.fixed_width.url,
+          width: parseInt(gif.images.original.width),
+          height: parseInt(gif.images.original.height),
+          title: gif.title
+        }
+      };
+      if (isGroup) payload.isGroup = true;
+      if (replyTo) {
+        payload.replyTo = {
+          messageId:   replyTo._id,
+          senderId:    replyTo.senderId?._id || replyTo.senderId,
+          senderName:  replyTo.senderName,
+          previewText: replyTo.previewText || replyTo.text || 'GIF',
+          messageType: 'gif'
+        };
+      }
+      const { data } = await api.post('/messages', payload);
+      onMessageSent(data.message);
+      setShowEmojiPicker(false);
+      onCancelReply?.();
+      textareaRef.current?.focus();
+    } catch (err) {
+      console.error('Send GIF error:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSendSticker = async (sticker) => {
+    try {
+      setSending(true);
+      const payload = { 
+        receiverId, 
+        messageType: 'sticker',
+        giphy: {
+          id: sticker.id,
+          mediaUrl: sticker.images.original.url,
+          previewUrl: sticker.images.fixed_width.url,
+          width: parseInt(sticker.images.original.width),
+          height: parseInt(sticker.images.original.height),
+          title: sticker.title
+        }
+      };
+      if (isGroup) payload.isGroup = true;
+      if (replyTo) {
+        payload.replyTo = {
+          messageId:   replyTo._id,
+          senderId:    replyTo.senderId?._id || replyTo.senderId,
+          senderName:  replyTo.senderName,
+          previewText: replyTo.previewText || replyTo.text || 'Sticker',
+          messageType: 'sticker'
+        };
+      }
+      const { data } = await api.post('/messages', payload);
+      onMessageSent(data.message);
+      setShowEmojiPicker(false);
+      onCancelReply?.();
+      textareaRef.current?.focus();
+    } catch (err) {
+      console.error('Send sticker error:', err);
     } finally {
       setSending(false);
     }
@@ -330,15 +411,11 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
             <div className="flex gap-1 md:gap-2 mb-1.5 md:mb-2 text-text-muted relative" ref={emojiPickerRef}>
               {showEmojiPicker && (
                 <div className="absolute bottom-full left-0 mb-4 z-50 animate-slide-up origin-bottom-left shadow-2xl">
-                  <EmojiPicker
+                  <GifPicker
                     onEmojiClick={handleEmojiClick}
-                    theme="dark"
-                    searchDisabled={false}
-                    skinTonesDisabled={true}
-                    lazyLoadEmojis={true}
-                    width={300}
-                    height={400}
-                    autoFocusSearch={false}
+                    onGifSelect={handleSendGif}
+                    onStickerSelect={handleSendSticker}
+                    theme={theme}
                   />
                 </div>
               )}

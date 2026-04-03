@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from '../components/Sidebar/Sidebar';
 import ChatWindow from '../components/Chat/ChatWindow';
 import NetworkStatus from '../components/ui/NetworkStatus';
+import PushPermissionPrompt from '../components/ui/PushPermissionPrompt';
 
 export default function ChatPage() {
   const [selectedUser, setSelectedUser] = useState(null);
@@ -9,6 +10,7 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen bg-bg-primary overflow-hidden relative">
       <NetworkStatus />
+      <PushPermissionPrompt />
       <Sidebar selectedUser={selectedUser} onSelectUser={setSelectedUser} />
       <ChatWindow selectedUser={selectedUser} />
     </div>

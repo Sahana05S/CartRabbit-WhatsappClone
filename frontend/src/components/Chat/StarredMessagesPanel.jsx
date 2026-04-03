@@ -114,7 +114,12 @@ export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessag
                     <span className="italic text-text-muted opacity-70">This message was deleted</span>
                   ) : !isText ? (
                     <div className="flex items-center gap-1.5 text-text-muted">
-                      <span>{message.messageType === 'image' ? '📷 Photo' : '📎 File'}</span>
+                      <span>
+                        {message.messageType === 'image' ? '📷 Photo' 
+                        : message.messageType === 'gif' ? '🎬 GIF'
+                        : message.messageType === 'sticker' ? '🖼️ Sticker'
+                        : '📎 File'}
+                      </span>
                       {hasCaption && (
                         <>
                           <span className="mx-1 opacity-50">•</span>

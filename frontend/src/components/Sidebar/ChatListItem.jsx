@@ -61,6 +61,12 @@ export default function ChatListItem({ user, isActive, isOnline, onClick, onTogg
                 body = '📷 Photo';
               } else if (lastMessage.messageType === 'file') {
                 body = `📎 ${lastMessage.attachment?.fileName || 'File'}`;
+              } else if (lastMessage.messageType === 'audio') {
+                body = '🎵 Voice message';
+              } else if (lastMessage.messageType === 'gif') {
+                body = '🎬 GIF';
+              } else if (lastMessage.messageType === 'sticker') {
+                body = '🖼️ Sticker';
               } else {
                 body = lastMessage.text || '';
               }

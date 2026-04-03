@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import ChatPage from './pages/ChatPage';
+import { registerServiceWorker } from './utils/notifications';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -21,6 +23,10 @@ const ProtectedRoute = ({ children }) => {
 };
 
 export default function App() {
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   return (
     <Routes>
       <Route path="/"     element={<AuthPage />} />

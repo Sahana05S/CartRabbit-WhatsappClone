@@ -12,7 +12,7 @@ export default function SettingsPanel({ onClose }) {
 
   const settings = currentUser?.settings || {
     privacy: { lastSeen: true, onlineStatus: true, readReceipts: true },
-    notifications: { sounds: true, desktop: true },
+    notifications: { sounds: true, desktop: true, preview: true },
     chat: { enterToSend: true }
   };
 
@@ -30,9 +30,21 @@ export default function SettingsPanel({ onClose }) {
     }
   };
 
-  const toggleSetting = (category, key) => {
+  const toggleSetting = async (category, key) => {
     const current = settings[category]?.[key] ?? true;
-    updateSetting(category, key, !current);
+    const nextValue = !current;
+    
+    // Web Push specific logic
+    if (category === 'notifications' && key === 'desktop') {
+      const { subscribeToPush, unsubscribeFromPush } = await import('../../utils/notifications');
+      if (nextValue) {
+        await subscribeToPush(currentUser);
+      } else {
+        await unsubscribeFromPush();
+      }
+    }
+
+    updateSetting(category, key, nextValue);
   };
 
   const categories = [
@@ -102,6 +114,14 @@ export default function SettingsPanel({ onClose }) {
                 icon={Monitor}
                 checked={settings.notifications.desktop} 
                 onToggle={() => toggleSetting('notifications', 'desktop')} 
+                disabled={loading}
+              />
+              <SettingToggle 
+                label="Message Preview" 
+                desc="Show message text in desktop notifications" 
+                icon={Eye}
+                checked={settings.notifications.preview ?? true} 
+                onToggle={() => toggleSetting('notifications', 'preview')} 
                 disabled={loading}
               />
             </>

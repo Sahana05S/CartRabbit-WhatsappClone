@@ -1,20 +1,29 @@
 const Message = require('../models/Message');
+const User = require('../models/User');
 const { getIO } = require('../socket/socketHandler');
+const { sendPushNotification, getMessagePreview } = require('../utils/notificationUtils');
 
 // POST /api/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, replyTo, isGroup } = req.body;
+    const { receiverId, text, replyTo, isGroup, giphy, messageType } = req.body;
     const senderId = req.user._id;
 
     if (!receiverId) {
       return res.status(400).json({ success: false, message: 'Receiver/Group is required.' });
     }
-    if (!text || !text.trim()) {
+    
+    const isGifOrSticker = messageType === 'gif' || messageType === 'sticker';
+    if (!isGifOrSticker && (!text || !text.trim())) {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
-    const messageData = { senderId, text: text.trim() };
+    const messageData = { 
+      senderId, 
+      text: text ? text.trim() : '',
+      messageType: messageType || 'text',
+      giphy: giphy || null
+    };
     if (isGroup) {
       messageData.chatType = 'group';
       messageData.groupId = receiverId;
@@ -47,6 +56,16 @@ const sendMessage = async (req, res) => {
     } else {
       io.to(receiverId.toString()).emit('newMessage', populated);
       io.to(senderId.toString()).emit('newMessage', populated);
+      
+      // Trigger Push Notification for direct messages
+      const recipient = await User.findById(receiverId);
+      if (recipient) {
+        sendPushNotification(recipient, {
+          title: req.user.displayName || req.user.username,
+          body:  getMessagePreview(populated),
+          senderId: senderId.toString()
+        });
+      }
     }
 
     res.status(201).json({ success: true, message: populated });
@@ -319,6 +338,16 @@ const sendAttachment = async (req, res) => {
     } else {
       io.to(receiverId.toString()).emit('newMessage', populated);
       io.to(senderId.toString()).emit('newMessage', populated);
+
+      // Trigger Push Notification for direct messages
+      const recipient = await User.findById(receiverId);
+      if (recipient) {
+        sendPushNotification(recipient, {
+          title: req.user.displayName || req.user.username,
+          body:  getMessagePreview(populated),
+          senderId: senderId.toString()
+        });
+      }
     }
 
     res.status(201).json({ success: true, message: populated });

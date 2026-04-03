@@ -65,6 +65,15 @@
     --border-color: #222d34; /* WhatsApp dark mode borders */
   }
 
+  @keyframes slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-down {
+    animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
   body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--bg-primary);

@@ -170,9 +170,11 @@ export default function MessageBubble({
               setContextMenu({ x: e.clientX, y: e.clientY });
             }}
             className={`max-w-[85vw] md:max-w-md rounded-lg px-4 py-2.5 relative transition-all
-            ${isSent
-              ? 'bg-bubble-out text-text-primary rounded-br-[4px]'
-              : 'bg-bubble-in text-text-primary border border-border rounded-bl-[4px]'
+            ${message.messageType === 'sticker' 
+              ? 'bg-transparent border-transparent px-0 py-0' 
+              : isSent
+                ? 'bg-bubble-out text-text-primary rounded-br-[4px]'
+                : 'bg-bubble-in text-text-primary border border-border rounded-bl-[4px]'
             }
           `}>
 
@@ -204,6 +206,8 @@ export default function MessageBubble({
                 ? (rt.messageType === 'image' ? '📷 Photo'
                  : rt.messageType === 'audio' ? '🎵 Audio'
                  : rt.messageType === 'file'  ? '📎 File'
+                 : rt.messageType === 'gif'   ? '🎬 GIF'
+                 : rt.messageType === 'sticker' ? '🖼️ Sticker'
                  : '📎 Attachment')
                 : null;
               return (
@@ -231,6 +235,22 @@ export default function MessageBubble({
               />
             ) : (message.messageType === 'image' || message.messageType === 'file') ? (
               <AttachmentMessage message={message} isSent={isSent} />
+            ) : message.messageType === 'gif' ? (
+              <div className="relative rounded-lg overflow-hidden bg-bg-secondary min-h-[100px]">
+                <img 
+                  src={message.giphy?.mediaUrl} 
+                  alt={message.giphy?.title || 'GIF'} 
+                  className="w-full h-auto block"
+                />
+              </div>
+            ) : message.messageType === 'sticker' ? (
+              <div className="relative flex justify-center">
+                <img 
+                  src={message.giphy?.mediaUrl} 
+                  alt={message.giphy?.title || 'Sticker'} 
+                  className="w-40 h-40 object-contain block"
+                />
+              </div>
             ) : (
               <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
                 <HighlightText text={message.text} query={searchQuery} />
