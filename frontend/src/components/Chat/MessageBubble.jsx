@@ -1,53 +1,59 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Reply, 
+  Trash2, 
+  Forward, 
+  Copy, 
+  Star, 
+  Check, 
+  Info, 
+  Lock, 
+  CheckCheck,
+  MoreHorizontal,
+  Smile,
+  ChevronDown
+} from 'lucide-react';
 import { formatMessageTime } from '../../utils/formatTime';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useE2EE } from '../../context/E2EEContext';
-import { Reply, Trash2, Forward, Copy, Star, Check, Info, Lock } from 'lucide-react';
-import DeleteMessageMenu from './DeleteMessageMenu';
 import AttachmentMessage from './AttachmentMessage';
 import HighlightText from './HighlightText';
+import AudioPlayer from './AudioPlayer';
+import DeleteMessageMenu from './DeleteMessageMenu';
 import ForwardModal from './ForwardModal';
 import MessageInfoPanel from './MessageInfoPanel';
-import AudioPlayer from './AudioPlayer';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-export default function MessageBubble({
+const MessageBubble = ({
   message,
   isSent,
   isHighlighted,
   isSearchHit,
   isSearchActive,
-  // isLastRead retained in signature for future Message Info panel usage
-  // eslint-disable-next-line no-unused-vars
-  isLastRead,
   searchQuery,
   onReply,
   onScrollToReply,
   onDeleteForMe,
-  onDeleteForEveryone,
-  onStarToggle,         // (messageId, isStarred) => void  — update local state
-}) {
+  onStarToggle,
+  isLastRead
+}) => {
   const { currentUser } = useAuth();
-  const { decryptMsg }  = useE2EE();
-  const [showPicker,     setShowPicker]     = useState(false);
+  const { decryptMsg } = useE2EE();
+  const [showPicker, setShowPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
-  const [showForward,    setShowForward]    = useState(false);
-  const [showInfo,       setShowInfo]       = useState(false);
-  const [copied,         setCopied]         = useState(false);
-  const [starLoading,    setStarLoading]    = useState(false);
-  const [contextMenu,    setContextMenu]    = useState(null);
-
-  // ── E2EE decryption state ─────────────────────────────────────────────
-  // 'pending' | 'decrypted' | 'failed'
-  const [decryptState,   setDecryptState]   = useState(message.isE2EE ? 'pending' : 'plain');
-  const [decryptedText,  setDecryptedText]  = useState(null);
+  const [showForward, setShowForward] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [decryptState, setDecryptState] = useState(message.isE2EE ? 'pending' : 'plain');
+  const [decryptedText, setDecryptedText] = useState(null);
 
   useEffect(() => {
     if (!message.isE2EE) return;
     let cancelled = false;
-
     const run = async () => {
       const plaintext = await decryptMsg(message);
       if (cancelled) return;
@@ -58,36 +64,13 @@ export default function MessageBubble({
         setDecryptState('failed');
       }
     };
-
     run();
     return () => { cancelled = true; };
-  // We intentionally depend only on message._id to avoid re-running on
-  // every reaction/status update. The ciphertext never changes after creation.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [message._id, message.isE2EE]);
+  }, [message._id, message.isE2EE, decryptMsg]);
 
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    if (contextMenu) {
-      document.addEventListener('click', handleClick);
-    }
-    return () => document.removeEventListener('click', handleClick);
-  }, [contextMenu]);
+  const isStarred = (message.starredBy || []).map(id => id?.toString?.() ?? id).includes(currentUser?._id?.toString());
+  const displayText = message.isE2EE ? (decryptState === 'decrypted' ? decryptedText : null) : message.text;
 
-  // ─── Derived state ────────────────────────────────────────────────────────
-  const isStarred  = (message.starredBy || []).includes(currentUser?._id) ||
-                     (message.starredBy || []).map(id => id?.toString?.() ?? id).includes(currentUser?._id?.toString());
-  const isText     = !message.messageType || message.messageType === 'text';
-  const hasCaption = !isText && message.text;
-
-  // For E2EE text messages, use decryptedText as the display text.
-  // copyText is set to null while decryption is pending or failed.
-  const displayText = message.isE2EE
-    ? (decryptState === 'decrypted' ? decryptedText : null)
-    : message.text;
-  const copyText = isText ? displayText : (hasCaption ? message.text : null);
-
-  // ─── Reactions ─────────────────────────────────────────────────────────────
   const handleReact = async (emoji) => {
     setShowPicker(false);
     try { await api.post(`/messages/${message._id}/react`, { emoji }); }
@@ -99,329 +82,230 @@ export default function MessageBubble({
     return acc;
   }, {});
 
-  // ─── Delete ────────────────────────────────────────────────────────────────
-  const handleDeleteForMe = async () => {
-    setShowDeleteMenu(false);
-    try {
-      await api.delete(`/messages/${message._id}/for-me`);
-      onDeleteForMe?.(message._id);
-    } catch (err) { console.error('Delete for me failed', err); }
-  };
-
-  const handleDeleteForEveryone = async () => {
-    setShowDeleteMenu(false);
-    try { await api.delete(`/messages/${message._id}/for-everyone`); }
-    catch (err) { console.error('Delete for everyone failed', err); }
-  };
-
-  // ─── Copy ──────────────────────────────────────────────────────────────────
   const handleCopy = useCallback(async () => {
-    if (!copyText) return;
-    try {
-      await navigator.clipboard.writeText(copyText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers / non-https
-      const ta = document.createElement('textarea');
-      ta.value = copyText;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }, [copyText]);
+    if (!displayText) return;
+    await navigator.clipboard.writeText(displayText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    setShowMenu(false);
+  }, [displayText]);
 
-  // ─── Star ──────────────────────────────────────────────────────────────────
   const handleStar = async () => {
-    if (starLoading) return;
-    setStarLoading(true);
     try {
       const { data } = await api.post(`/messages/${message._id}/star`);
       onStarToggle?.(message._id, data.isStarred);
+      setShowMenu(false);
     } catch (err) { console.error('Star toggle failed', err); }
-    finally { setStarLoading(false); }
   };
 
-  // ─── Reply metadata ────────────────────────────────────────────────────────
-  const hasReplyBlock = message.replyTo?.messageId;
-
-  // ─── Deleted-for-everyone rendering ───────────────────────────────────────
   if (message.isDeletedForEveryone) {
     return (
-      <div
-        id={`msg-${message._id}`}
-        className={`flex w-full ${isSent ? 'justify-end' : 'justify-start'} mb-2`}
-      >
-        <div className={`rounded-2xl px-4 py-2.5 flex items-center gap-2 border
-          ${isSent
-            ? 'bg-bubble-out border-border text-text-muted opacity-60 rounded-br-[4px]'
-            : 'bg-bubble-in border-border text-text-muted opacity-80 rounded-bl-[4px]'
-          }
-        `}>
-          <Trash2 className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-          <p className="text-[13px] italic">
-            {isSent ? 'You deleted this message' : 'This message was deleted'}
-          </p>
-          <span className="text-[10px] opacity-50 ml-1">{formatMessageTime(message.createdAt)}</span>
+      <div className={`flex w-full ${isSent ? 'justify-end' : 'justify-start'} mb-2 px-4`}>
+        <div className={`glass-card px-4 py-2 flex items-center gap-2 opacity-60 rounded-2xl italic text-[13px] ${isSent ? 'rounded-tr-none' : 'rounded-tl-none'}`}>
+          <Trash2 className="w-3 h-3" />
+          {isSent ? 'You deleted this message' : 'This message was deleted'}
         </div>
       </div>
     );
   }
 
-  // ─── Normal bubble ────────────────────────────────────────────────────────
   return (
-    <>
-      <div
-        id={`msg-${message._id}`}
-        className={`flex w-full ${
-          isSent ? 'justify-end' : 'justify-start'
-        } group/bubble mb-1 relative rounded-xl transition-colors duration-200 ${
-          isHighlighted   ? 'animate-highlight-flash' : ''
-        } ${
-          isSearchActive  ? 'ring-2 ring-accent/60 ring-offset-1 ring-offset-bg-primary rounded-2xl' : ''
-        } ${
-          isSearchHit && !isSearchActive ? 'bg-accent/[0.04] rounded-2xl' : ''
-        }`}
-        onMouseLeave={() => setShowPicker(false)}
-      >
-        <div className={`relative flex items-center ${isSent ? 'flex-row-reverse' : 'flex-row'} gap-1`}>
-
-          {/* Emoji Picker Tray */}
-          {showPicker && (
-            <div className={`absolute -top-10 z-20 flex items-center gap-1 bg-surface border border-white/10 rounded-full px-2 py-1 shadow-lg animate-scale-in origin-bottom ${isSent ? 'right-8' : 'left-8'}`}>
-              {EMOJIS.map(e => (
-                <button key={e} onClick={() => handleReact(e)} className="hover:scale-125 transition-transform text-lg px-1">{e}</button>
-              ))}
-            </div>
-          )}
-
-          {/* Message Bubble */}
+    <motion.div
+      id={`msg-${message._id}`}
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      className={`flex flex-col w-full ${isSent ? 'items-end' : 'items-start'} mb-2 group/msg px-4 relative`}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setShowMenu(true);
+      }}
+    >
+      <div className={`flex items-start gap-2 max-w-[85%] md:max-w-[70%] ${isSent ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Message Bubble Container */}
+        <div className="relative group/bubble">
           <div 
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setContextMenu({ x: e.clientX, y: e.clientY });
-            }}
-            className={`max-w-[85vw] md:max-w-md rounded-lg px-4 py-2.5 relative transition-all
-            ${message.messageType === 'sticker' 
-              ? 'bg-transparent border-transparent px-0 py-0' 
-              : isSent
-                ? 'bg-bubble-out text-text-primary rounded-br-[4px]'
-                : 'bg-bubble-in text-text-primary border border-border rounded-bl-[4px]'
-            }
-          `}>
-
-            {/* Forwarded label */}
+            className={`relative rounded-2xl transition-all duration-300 ${message.messageType === 'sticker' 
+              ? 'px-0 py-0 bg-transparent' 
+              : 'px-4 py-2.5 shadow-sm ' + (isSent ? 'bg-[var(--bubble-out)] text-text-primary rounded-tr-none' : 'bg-[var(--bubble-in)] text-text-primary rounded-tl-none')
+            } ${isHighlighted ? 'ring-2 ring-accent ring-offset-2 ring-offset-bg-primary' : ''}`}
+          >
+            {/* Forwarded Header */}
             {message.isForwarded && (
-              <div className="flex items-center gap-1 mb-1.5 text-text-muted">
-                <Forward className="w-3 h-3" />
-                <span className="text-[11px] italic">Forwarded</span>
+              <div className={`flex items-center gap-1 mb-1 opacity-50 ${message.messageType === 'sticker' ? 'px-4 pt-2' : ''}`}>
+                <Forward className="w-3 h-3 italic" />
+                <span className="text-[10px] font-bold uppercase tracking-wider italic">Forwarded</span>
               </div>
             )}
 
-            {/* Group sender name */}
+            {/* Sender Name (Groups) */}
             {message.chatType === 'group' && !isSent && (
-              <div
-                className="text-[12px] font-bold mb-1 tracking-tight"
-                style={{ color: message.senderId?.avatarColor || '#7c3aed' }}
-              >
-                {message.senderId?.displayName || message.senderId?.username || 'Unknown'}
-              </div>
-            )}
-
-            {/* Quoted reply block */}
-            {hasReplyBlock && (() => {
-              const rt          = message.replyTo;
-              const isRtText    = !rt.messageType || rt.messageType === 'text';
-              const displayText = rt.previewText || '';
-              const truncated   = displayText.length > 80 ? displayText.slice(0, 80) + '…' : displayText;
-              const mediaLabel  = !isRtText
-                ? (rt.messageType === 'image' ? '📷 Photo'
-                 : rt.messageType === 'audio' ? '🎵 Audio'
-                 : rt.messageType === 'file'  ? '📎 File'
-                 : rt.messageType === 'gif'   ? '🎬 GIF'
-                 : rt.messageType === 'sticker' ? '🖼️ Sticker'
-                 : '📎 Attachment')
-                : null;
-              return (
-                <button
-                  onClick={() => rt.messageId && onScrollToReply?.(rt.messageId.toString())}
-                  className={`w-full text-left mb-2 rounded-lg overflow-hidden border-l-[3px] px-3 py-1.5 block transition-opacity hover:opacity-80
-                    ${isSent ? 'border-accent-dark bg-black/5' : 'border-accent-light bg-black/5'}
-                  `}
-                >
-                  <p className={`text-[11px] font-semibold mb-0.5 truncate ${isSent ? 'text-text-primary' : 'text-accent-light'}`}>
-                    {rt.senderName || 'Unknown'}
-                  </p>
-                  <p className="text-[12px] truncate text-text-secondary">
-                    {isRtText ? (truncated || 'Message') : mediaLabel}
-                  </p>
-                </button>
-              );
-            })()}
-
-            {/* Message content */}
-            {message.messageType === 'audio' ? (
-              <AudioPlayer
-                url={message.attachment?.fileUrl}
-                duration={message.attachment?.duration}
-              />
-            ) : (message.messageType === 'image' || message.messageType === 'file') ? (
-              <AttachmentMessage message={message} isSent={isSent} />
-            ) : message.messageType === 'gif' ? (
-              <div className="relative rounded-lg overflow-hidden bg-bg-secondary min-h-[100px]">
-                <img
-                  src={message.giphy?.mediaUrl}
-                  alt={message.giphy?.title || 'GIF'}
-                  className="w-full h-auto block"
-                />
-              </div>
-            ) : message.messageType === 'sticker' ? (
-              <div className="relative flex justify-center">
-                <img
-                  src={message.giphy?.mediaUrl}
-                  alt={message.giphy?.title || 'Sticker'}
-                  className="w-40 h-40 object-contain block"
-                />
-              </div>
-            ) : message.isE2EE ? (
-              // ── E2EE text bubble content ──────────────────────────────────────
-              decryptState === 'pending' ? (
-                <p className="text-[14px] leading-relaxed text-text-muted italic animate-pulse">
-                  Decrypting…
-                </p>
-              ) : decryptState === 'failed' ? (
-                <p className="text-[13px] leading-relaxed text-text-muted italic flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-                  Unable to decrypt message
-                </p>
-              ) : (
-                <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
-                  <HighlightText text={decryptedText} query={searchQuery} />
-                </p>
-              )
-            ) : (
-              <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
-                <HighlightText text={message.text} query={searchQuery} />
+              <p className={`text-[12px] font-black mb-1 opacity-80 ${message.messageType === 'sticker' ? 'px-4 pt-2' : ''}`} style={{ color: message.senderId?.avatarColor || 'var(--accent-default)' }}>
+                {message.senderId?.displayName || message.senderId?.username}
               </p>
             )}
 
-
-            {/* Time + read receipts + star indicator + lock badge */}
-            <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${isSent ? 'text-text-muted' : 'text-text-muted'}`}>
-              {/* Star indicator — only visible when starred */}
-              {isStarred && (
-                <Star className={`w-3 h-3 fill-current ${isSent ? 'text-yellow-300/80' : 'text-yellow-400/80'}`} />
-              )}
-              {/* E2EE lock badge */}
-              {message.isE2EE && decryptState !== 'failed' && (
-                <Lock className="w-3 h-3 opacity-60" title="End-to-end encrypted" />
-              )}
-              <span>{formatMessageTime(message.createdAt)}</span>
-              {isSent && (
-                <span className="flex items-center justify-center">
-                  {/* Single tick — sent */}
-                  {(!message.status || message.status === 'sent') && (
-                    <svg className="w-3.5 h-3.5 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  )}
-                  {/* Double tick gray — delivered */}
-                  {message.status === 'delivered' && (
-                    <svg className="w-4 h-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="16 6 7 17 3 13"></polyline>
-                      <polyline points="22 6 13 17"></polyline>
-                    </svg>
-                  )}
-                  {/* Double tick blue — read */}
-                  {message.status === 'read' && (
-                    <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="16 6 7 17 3 13"></polyline>
-                      <polyline points="22 6 13 17"></polyline>
-                    </svg>
-                  )}
-                  {/* readAt is stored in message state — available for a future Message Info panel */}
-                </span>
-              )}
-            </div>
-
-
-            {/* Reaction chips */}
-            {Object.keys(reactionCounts).length > 0 && (
-              <div className={`absolute -bottom-3 ${isSent ? 'right-2' : 'left-2'} flex items-center gap-1 animate-scale-in`}>
-                <div className="bg-bg-panel border border-white/10 rounded-full px-1.5 py-0.5 text-[11px] flex items-center gap-1 shadow-sm hover:scale-110 active:scale-95 transition-transform cursor-default">
-                  <span className="flex gap-0.5">
-                    {Object.keys(reactionCounts).map(emoji => <span key={emoji}>{emoji}</span>)}
-                  </span>
-                  {message.reactions.length > 1 && (
-                    <span className="text-text-muted font-semibold pl-0.5">{message.reactions.length}</span>
-                  )}
-                </div>
+            {/* Reply Block */}
+            {message.replyTo?.messageId && (
+              <div className={message.messageType === 'sticker' ? 'px-4 py-1' : ''}>
+                <button 
+                  onClick={() => onScrollToReply?.(message.replyTo.messageId)}
+                  className={`w-full text-left mb-2 rounded-lg p-2 border-l-4 transition-all hover:brightness-110 ${isSent 
+                    ? 'bg-black/10 border-black/30' 
+                    : 'bg-black/5 dark:bg-white/5 border-accent'
+                  }`}
+                >
+                  <p className={`text-[11px] font-black uppercase tracking-tighter truncate ${isSent ? 'text-black/60 dark:text-white/60' : 'text-accent'}`}>
+                    {message.replyTo.senderName}
+                  </p>
+                  <p className={`text-[12px] truncate opacity-80 text-text-primary`}>
+                    {message.replyTo.previewText || 'Attachment'}
+                  </p>
+                </button>
               </div>
             )}
-          </div>
 
-          {/* Context Menu Modal placed absolutely based on coordinates */}
-          {contextMenu && (
-            <div
-              className="fixed z-50 min-w-[200px] bg-bg-panel border border-border rounded-lg shadow-xl py-1"
-              style={{ top: contextMenu.y, left: contextMenu.x }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button onClick={() => { onReply?.(message); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Reply <Reply className="w-[15px] h-[15px] text-text-muted" /></button>
-
-              <button onClick={() => { setShowPicker(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">React <svg className="w-[15px] h-[15px] text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
-
-              {/* Copy: only available when text is known (not pending/failed decrypt) */}
-              {copyText && (
-                <button onClick={() => { handleCopy(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Copy <Copy className="w-[15px] h-[15px] text-text-muted" /></button>
-              )}
-
-              <button onClick={() => { handleStar(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">{isStarred ? 'Unstar' : 'Star'} <Star className={`w-[15px] h-[15px] ${isStarred ? 'text-yellow-400 fill-current' : 'text-text-muted'}`} /></button>
-
-              {/* Forward: blocked for E2EE messages (session-specific ciphertext) */}
-              {!message.isDeletedForEveryone && !message.isE2EE && (
-                <button onClick={() => { setShowForward(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Forward <Forward className="w-[15px] h-[15px] text-text-muted" /></button>
-              )}
-              {!message.isDeletedForEveryone && message.isE2EE && (
-                <div className="px-4 py-2 text-sm text-text-muted flex items-center justify-between cursor-not-allowed opacity-50" title="Encrypted messages cannot be forwarded">
-                  Forward <Forward className="w-[15px] h-[15px]" />
+            {/* Main Content */}
+            <div className="relative">
+              {message.messageType === 'audio' ? (
+                <AudioPlayer url={message.attachment?.fileUrl} duration={message.attachment?.duration} variant={isSent ? 'dark' : 'light'} />
+              ) : (message.messageType === 'image' || message.messageType === 'file') ? (
+                <AttachmentMessage message={message} isSent={isSent} />
+              ) : (message.messageType === 'gif' || message.messageType === 'sticker') ? (
+                <div className={`relative ${message.messageType === 'sticker' ? 'p-0' : ''}`}>
+                  <img 
+                    src={message.giphy?.mediaUrl} 
+                    alt={message.giphy?.title || 'Media'} 
+                    className={`rounded-xl object-contain ${
+                      message.messageType === 'sticker' 
+                        ? 'w-[160px] h-[160px]' 
+                        : 'w-full max-h-[300px]'
+                    }`} 
+                  />
+                  {message.messageType === 'gif' && (
+                    <div className="absolute bottom-2 left-2 px-1 rounded bg-black/40 backdrop-blur-sm">
+                      <span className="text-[10px] font-black text-white/90">GIF</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[15px] leading-relaxed break-words whitespace-pre-wrap font-medium">
+                  {message.isE2EE ? (
+                    decryptState === 'pending' ? <span className="italic opacity-50">Decrypting...</span> :
+                    decryptState === 'failed' ? <span className="italic opacity-50 flex items-center gap-1"><Lock className="w-3 h-3" /> Undecipherable</span> :
+                    <HighlightText text={decryptedText} query={searchQuery} />
+                  ) : <HighlightText text={message.text} query={searchQuery} />}
                 </div>
               )}
-
-              {isSent && !message.isDeletedForEveryone && (
-                <button onClick={() => { setShowInfo(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Message info <Info className="w-[15px] h-[15px] text-text-muted" /></button>
-              )}
-
-              <button onClick={() => { setShowDeleteMenu(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-red-500 transition-colors flex items-center justify-between">Delete <Trash2 className="w-[15px] h-[15px] text-red-400" /></button>
             </div>
-          )}
 
+            {/* Meta Info Trace (Time + Status) */}
+            <div className={`flex items-center justify-end gap-1.5 mt-1.5 opacity-60 text-[10px] font-bold ${
+              message.messageType === 'sticker' 
+                ? 'text-text-muted mt-1 w-full justify-end' 
+                : 'text-text-muted'
+              }`}>
+              {isStarred && <Star className="w-3 h-3 fill-current text-yellow-500" />}
+              {message.isE2EE && decryptState !== 'failed' && <Lock className="w-3 h-3" />}
+              <span>{formatMessageTime(message.createdAt)}</span>
+              {isLastRead && message.status === 'read' && <span className="ml-1 uppercase tracking-tighter opacity-70">Seen at {formatMessageTime(message.updatedAt || message.createdAt)}</span>}
+              {isSent && (
+                <div className="flex">
+                  {message.status === 'read' ? <CheckCheck className="w-3.5 h-3.5 text-accent" /> :
+                   message.status === 'delivered' ? <CheckCheck className="w-3.5 h-3.5" /> :
+                   <Check className="w-3.5 h-3.5" />}
+                </div>
+              )}
+            </div>
 
+            {/* Hover Actions Trigger */}
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className={`absolute top-2 ${isSent ? 'left-[-40px]' : 'right-[-40px]'} p-1.5 rounded-full bg-bg-panel border border-border opacity-0 group-hover/bubble:opacity-100 transition-all hover:text-accent z-10 text-text-muted shadow-lg`}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Reaction Overlay */}
+          <AnimatePresence>
+            {Object.keys(reactionCounts).length > 0 && (
+              <motion.div 
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className={`absolute -bottom-3 ${isSent ? 'right-2' : 'left-2'} flex gap-1 z-10`}
+              >
+                  <div className="bg-bg-panel shadow-lg rounded-full px-2 py-0.5 flex items-center gap-1 border border-border text-text-primary">
+                  {Object.keys(reactionCounts).map(emoji => <span key={emoji} className="text-xs">{emoji}</span>)}
+                  {message.reactions.length > 1 && <span className="text-[10px] font-bold text-accent ml-0.5">{message.reactions.length}</span>}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Quick Menu (WhatsApp Style Below Bubble) */}
+        <AnimatePresence>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
+              <motion.div 
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className={`absolute top-full mt-2 ${isSent ? 'right-0' : 'left-0'} z-[101] bg-bg-panel rounded-xl py-2 min-w-[170px] shadow-2xl border border-border text-text-primary overflow-hidden`}
+              >
+                <div className="px-3 py-1.5 border-b border-border mb-1 bg-bg-secondary/30">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">Message Options</p>
+                </div>
+                <button onClick={() => { onReply?.(message); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  Reply <Reply className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                </button>
+                <button onClick={() => { setShowForward(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  Forward <Forward className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                </button>
+                <button onClick={() => { setShowPicker(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  React <Smile className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                </button>
+                <button onClick={handleStar} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  {isStarred ? 'Unstar' : 'Star'} <Star className={`w-4 h-4 ${isStarred ? 'text-yellow-500 fill-current' : 'text-text-muted group-hover:text-yellow-500'} transition-colors`} />
+                </button>
+                <button onClick={handleCopy} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  {copied ? 'Copied!' : 'Copy'} <Copy className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                </button>
+                <div className="border-t border-border my-1" />
+                <button onClick={() => { setShowDeleteMenu(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold text-red-500 flex items-center justify-between group">
+                  Delete <Trash2 className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Emoji Picker */}
+        <AnimatePresence>
+          {showPicker && (
+            <>
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowPicker(false)} />
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                className={`absolute bottom-[calc(100%+10px)] ${isSent ? 'right-0' : 'left-0'} z-[101] bg-bg-panel rounded-full p-2 flex gap-1 shadow-2xl border border-border`}
+              >
+                {EMOJIS.map(e => (
+                  <button key={e} onClick={() => handleReact(e)} className="hover:scale-125 hover:bg-bg-hover transition-all text-lg px-2 py-1 rounded-full">{e}</button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Delete confirmation modal */}
-      {showDeleteMenu && (
-        <DeleteMessageMenu
-          isSent={isSent}
-          onDeleteForMe={handleDeleteForMe}
-          onDeleteForEveryone={handleDeleteForEveryone}
-          onClose={() => setShowDeleteMenu(false)}
-        />
-      )}
-
-      {/* Forward modal */}
-      {showForward && (
-        <ForwardModal message={message} onClose={() => setShowForward(false)} />
-      )}
-
-      {/* Message Info panel */}
-      {showInfo && (
-        <MessageInfoPanel messageId={message._id} onClose={() => setShowInfo(false)} />
-      )}
-    </>
+      {/* Modals */}
+      {showDeleteMenu && <DeleteMessageMenu isSent={isSent} onDeleteForMe={() => { onDeleteForMe(message._id); setShowDeleteMenu(false); }} onClose={() => setShowDeleteMenu(false)} />}
+      {showForward && <ForwardModal message={message} onClose={() => setShowForward(false)} />}
+      {showInfo && <MessageInfoPanel messageId={message._id} onClose={() => setShowInfo(false)} />}
+    </motion.div>
   );
-}
+};
+
+export default MessageBubble;

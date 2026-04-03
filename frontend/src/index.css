@@ -3,121 +3,75 @@
 @tailwind utilities;
 
 @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  ::selection {
+    background-color: var(--accent-light);
+    color: white;
   }
-
-  html, body, #root {
-    height: 100%;
-    overflow-x: hidden;
-  }
-
-  /* Theme Tokens */
-  :root, [data-theme="light"] {
-    --bg-primary: #efeae2;
-    --chat-bg-image: url('/doodle-light.jpg');
-    --bg-secondary: #f0f2f5;
-    --bg-panel: #ffffff;
-    --bg-hover: #f5f6f6;
-    --bg-active: #ebebeb;
-    
-    --accent-default: #00a884;
-    --accent-light: #25d366;
-    --accent-dark: #008069;
-    
-    --surface-default: #ffffff;
-    --surface-light: #d9fdd3;
   
-    --text-primary: #111b21;
-    --text-secondary: #54656f;
-    --text-muted: #667781;
-
-    --bubble-in: #ffffff;
-    --bubble-out: #d9fdd3;
-    
-    --highlight: rgba(0, 168, 132, 0.2);
-    --border-color: rgba(11, 20, 26, 0.1);
-  }
-
-  [data-theme="dark"] {
-    --bg-primary: #0b141a;   /* Chat background */
-    --chat-bg-image: url('/doodle-dark.jpg');
-    --bg-secondary: #111b21; /* Sidebar, header, footer */
-    --bg-panel: #202c33;     /* Modals, info panel */
-    --bg-hover: #202c33;
-    --bg-active: #2a3942;
-
-    --accent-default: #00a884;
-    --accent-light: #00a884;
-    --accent-dark: #005c4b;
-    
-    --surface-default: #202c33;
-    --surface-light: #202c33;
-
-    --text-primary: #e9edef;
-    --text-secondary: #8696a0;
-    --text-muted: #8696a0;
-
-    --bubble-in: #202c33; /* Incoming bubble */
-    --bubble-out: #005c4b; /* Outgoing bubble */
-    
-    --highlight: rgba(0, 168, 132, 0.1);
-    --border-color: #222d34; /* WhatsApp dark mode borders */
-  }
-
-  @keyframes slide-down {
-    from { transform: translateY(-100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  .animate-slide-down {
-    animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
   body {
-    font-family: 'Inter', system-ui, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(134, 150, 160, 0.4); border-radius: 99px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(134, 150, 160, 0.6); }
-
-  /* Selection */
-  ::selection { background: var(--accent-light); opacity: 0.3; color: #fff; }
-
-  input, textarea {
-    outline: none;
+    @apply antialiased;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 }
 
 @layer components {
+  .glass-card {
+    @apply bg-glass backdrop-blur-md border border-glass-border shadow-xl;
+  }
+  
+  .glass-card-heavy {
+    @apply bg-glass-heavy backdrop-blur-lg border border-glass-border shadow-2xl;
+  }
+
+  .glass-input {
+    @apply bg-glass-heavy border border-glass-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-200 rounded-lg px-4 py-2;
+  }
+
   .btn-primary {
-    @apply bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed
-           text-white font-semibold py-3 px-5 rounded-xl transition-all duration-200
-           flex items-center justify-center gap-2
-           shadow-accent hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:scale-100;
   }
 
-  .input-field {
-    @apply w-full bg-bg-secondary border border-border rounded-xl px-4 py-3
-           text-text-primary placeholder:text-text-muted text-sm
-           focus:border-accent focus:ring-1 focus:ring-accent
-           transition-all duration-200;
+  .btn-ghost {
+    @apply hover:bg-glass rounded-full p-2 transition-all duration-200 text-[#aebac1] hover:text-[#e9edef];
   }
 
-  .avatar {
-    @apply rounded-full flex items-center justify-center text-white font-bold
-           flex-shrink-0 select-none;
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
   }
 
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar-panel {
+    @apply absolute inset-0 z-20 bg-dark-sidebar flex flex-col;
+  }
+
+  .chat-bubble-me {
+    @apply bg-dark-bubble-me text-[#e9edef] rounded-lg rounded-tr-none px-3 py-1.5 shadow-sm relative;
+  }
+
+  .chat-bubble-them {
+    @apply bg-dark-bubble-them text-[#e9edef] rounded-lg rounded-tl-none px-3 py-1.5 shadow-sm relative;
+  }
+
+  /* Original Utility classes used by the Landing Page */
   .reveal-on-scroll {
     opacity: 0;
     transform: translateY(30px);
@@ -133,4 +87,71 @@
   .delay-200 { transition-delay: 200ms; }
   .delay-300 { transition-delay: 300ms; }
   .delay-400 { transition-delay: 400ms; }
+}
+
+/* Original Theme Tokens for Landing Page */
+:root, [data-theme="light"] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #f0f2f5;
+  --bg-panel: #ffffff;
+  --bg-hover: #f5f6f6;
+  --bg-active: #ebebeb;
+  
+  --accent-default: #00a884;
+  --accent-light: #25d366;
+  --accent-dark: #008069;
+  
+  --surface-default: #ffffff;
+  --surface-light: #d9fdd3;
+
+  --text-primary: #111b21;
+  --text-secondary: #54656f;
+  --text-muted: #667781;
+
+  --border-color: rgba(11, 20, 26, 0.08);
+  
+  --bubble-in: #ffffff;
+  --bubble-out: #d9fdd3;
+  --chat-bg-image: url('https://chat.whatsapp.com/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png');
+}
+
+.dark, [data-theme="dark"] {
+  --bg-primary: #0b141a;
+  --bg-secondary: #111b21;
+  --bg-panel: #202c33;
+  --bg-hover: #202c33;
+  --bg-active: #2a3942;
+
+  --accent-default: #00a884;
+  --accent-light: #00a884;
+  --accent-dark: #005c4b;
+  
+  --surface-default: #202c33;
+  --surface-light: #202c33;
+
+  --text-primary: #e9edef;
+  --text-secondary: #8696a0;
+  --text-muted: #8696a0;
+
+  --border-color: #222d34;
+  
+  --bubble-in: #202c33;
+  --bubble-out: #005c4b;
+  --chat-bg-image: url('https://chat.whatsapp.com/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png');
+}
+
+/* Custom transitions for Framer Motion or simple CSS */
+.panel-enter {
+  transform: translateX(-100%);
+}
+.panel-enter-active {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+.panel-exit {
+  transform: translateX(0);
+}
+.panel-exit-active {
+  transform: translateX(-100%);
+  transition: transform 300ms ease-in;
 }

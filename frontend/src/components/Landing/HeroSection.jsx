@@ -43,10 +43,10 @@ export default function HeroSection() {
             
             {/* Phone Header */}
             <div className="h-16 bg-bg-secondary/40 border-b border-border flex items-center px-4 gap-3 z-10 backdrop-blur-md">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-purple-400 flex-shrink-0 shadow-inner" />
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent-light flex-shrink-0 shadow-inner" />
               <div className="flex-1">
-                <div className="h-3 w-24 bg-text-primary/20 rounded-full mb-1.5" />
-                <div className="h-2 w-12 bg-emerald-400/60 rounded-full" />
+                <div className="h-3 w-24 bg-text-primary/10 rounded-full mb-1.5" />
+                <div className="h-2 w-12 bg-emerald-500/40 rounded-full" />
               </div>
             </div>
 
@@ -68,7 +68,7 @@ export default function HeroSection() {
                 Yes absolutely! I'll send the location soon.
                 <div className="text-[9px] text-white/80 mt-1 flex items-center justify-end gap-1">
                   10:43 AM 
-                  <svg className="w-3 h-3 text-blue-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg className="w-3 h-3 text-emerald-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </div>
@@ -76,7 +76,7 @@ export default function HeroSection() {
 
               {/* Message 3: Received Image placeholder */}
               <div className="self-start max-w-[80%] bg-bg-secondary p-1.5 rounded-2xl rounded-tl-sm shadow-sm z-10 mt-2">
-                <div className="w-full h-24 bg-gradient-to-tr from-emerald-400/20 to-blue-400/20 rounded-xl" />
+                <div className="w-full h-24 bg-gradient-to-tr from-emerald-500/10 to-accent/10 rounded-xl" />
                 <div className="px-2 pb-1 pt-1.5 text-[9px] text-text-muted text-right">10:45 AM</div>
               </div>
 

@@ -12,7 +12,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { initE2EE, wipeE2EE } from '../services/e2ee/keyService';
-import { getSessionKey, isPeerE2EECapable, clearAllSessions } from '../services/e2ee/sessionManager';
+import { getSessionKey, isPeerE2EECapable, clearAllSessions, evictSession } from '../services/e2ee/sessionManager';
 import { encryptMessage, decryptMessage as decryptRaw } from '../services/e2ee/crypto';
 
 const E2EEContext = createContext(null);
@@ -66,8 +66,8 @@ export const E2EEProvider = ({ children }) => {
       if (!sessionKey) return null;
 
       const aadData = {
-        senderId:   currentUser._id,
-        receiverId: peerId,
+        senderId:   currentUser._id.toString(),
+        receiverId: peerId.toString(),
         t:          Date.now(),
       };
 
@@ -99,19 +99,32 @@ export const E2EEProvider = ({ children }) => {
     try {
       const senderId = message.senderId?._id || message.senderId;
       // We decrypt using the sender's session key (ECDH is symmetric)
-      const peerId   = senderId === currentUser._id
+      const peerId   = senderId.toString() === currentUser._id.toString()
         ? (message.receiverId?._id || message.receiverId)
         : senderId;
 
-      const sessionKey = await getSessionKey(peerId);
+      let sessionKey = await getSessionKey(peerId.toString());
       if (!sessionKey) return null;
 
       const expectedAad = {
-        senderId:   senderId,
-        receiverId: message.receiverId?._id || message.receiverId,
+        senderId:   senderId.toString(),
+        receiverId: (message.receiverId?._id || message.receiverId).toString(),
       };
 
-      return await decryptRaw(sessionKey, iv, ciphertext, aad, expectedAad);
+      let plaintext = await decryptRaw(sessionKey, iv, ciphertext, aad, expectedAad);
+      
+      // If decryption fails, the peer might have refreshed/re-uploaded keys.
+      // Eject our cache and try deriving with latest server bundle ONCE.
+      if (plaintext === null) {
+        console.log(`[E2EE] Decrypt failed for msg ${message._id}, retrying with fresh bundle...`);
+        evictSession(peerId.toString());
+        const freshKey = await getSessionKey(peerId.toString());
+        if (freshKey) {
+          plaintext = await decryptRaw(freshKey, iv, ciphertext, aad, expectedAad);
+        }
+      }
+
+      return plaintext;
     } catch (err) {
       console.error('[E2EE] decryptMsg failed:', err);
       return null;

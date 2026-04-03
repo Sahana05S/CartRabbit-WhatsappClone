@@ -28,13 +28,13 @@ export default function ReplyPreview({ replyTo, onCancel }) {
   const truncated = preview.length > 100 ? preview.slice(0, 100) + '…' : preview;
 
   return (
-    <div className="mx-3 md:mx-6 mb-1 flex items-center gap-2 bg-bg-secondary border border-white/[0.06] rounded-xl px-3 py-2 animate-slide-up">
+    <div className="mx-3 md:mx-6 mb-1 flex items-center gap-2 bg-bg-panel border border-border rounded-xl px-3 py-2 animate-slide-up shadow-sm">
       {/* Accent left bar */}
-      <div className="w-[3px] self-stretch rounded-full bg-accent-light flex-shrink-0" />
+      <div className="w-[3px] self-stretch rounded-full bg-accent flex-shrink-0" />
 
       <div className="flex-1 min-w-0">
         {/* Sender name */}
-        <p className="text-[12px] font-semibold text-accent-light truncate mb-0.5">
+        <p className="text-[12px] font-semibold text-accent truncate mb-0.5">
           {replyTo.senderName || 'Unknown'}
         </p>
 
@@ -52,7 +52,7 @@ export default function ReplyPreview({ replyTo, onCancel }) {
 
       <button
         onClick={onCancel}
-        className="p-1 rounded-full hover:bg-white/10 text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+        className="p-1 rounded-full hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
         aria-label="Cancel reply"
       >
         <X className="w-4 h-4" />

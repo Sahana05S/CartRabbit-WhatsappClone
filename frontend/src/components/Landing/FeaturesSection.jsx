@@ -5,7 +5,7 @@ const features = [
     id: 1,
     title: "Real-time Messaging",
     description: "Instant delivery with live updates. Never miss a moment with seamless real-time syncing, typing indicators, and reliable read receipts across all your devices.",
-    icon: <MessageSquare className="w-6 h-6 text-blue-500" />,
+    icon: <MessageSquare className="w-6 h-6 text-accent" />,
     mockup: (
       <div className="p-6 bg-bg-panel/80 backdrop-blur-md rounded-[2rem] border border-border shadow-xl flex flex-col gap-3 relative overflow-hidden">
         <div className="self-start bg-bg-secondary text-text-primary px-4 py-2.5 rounded-2xl rounded-tl-sm text-[15px] shadow-sm max-w-[85%]">
@@ -32,7 +32,7 @@ const features = [
     id: 2,
     title: "Voice Messages",
     description: "Send and receive voice messages easily. When texting isn't enough, just hit record and share your thoughts instantly with rich waveform audio players.",
-    icon: <Mic className="w-6 h-6 text-rose-500" />,
+    icon: <Mic className="w-6 h-6 text-emerald-500" />,
     mockup: (
       <div className="p-6 bg-bg-panel/80 backdrop-blur-md rounded-[2rem] border border-border shadow-xl">
         <div className="flex items-center gap-4 bg-accent/5 px-5 py-4 rounded-full border border-accent/20">
@@ -53,11 +53,11 @@ const features = [
     id: 3,
     title: "Media & File Sharing",
     description: "Share images, videos, and documents seamlessly. Experience a dedicated media gallery, smooth file transfers, and rich image previews without leaving the chat.",
-    icon: <ImageIcon className="w-6 h-6 text-purple-500" />,
+    icon: <ImageIcon className="w-6 h-6 text-emerald-500" />,
     mockup: (
       <div className="grid grid-cols-2 gap-3 p-5 bg-bg-panel/80 backdrop-blur-md rounded-[2rem] border border-border shadow-xl transform rotate-1 hover:rotate-0 transition-all duration-300">
-        <div className="aspect-[4/3] bg-gradient-to-tr from-purple-500/20 to-blue-500/30 rounded-2xl border border-border/50"></div>
-        <div className="aspect-[4/3] bg-gradient-to-bl from-emerald-500/20 to-teal-500/30 rounded-2xl border border-border/50"></div>
+        <div className="aspect-[4/3] bg-gradient-to-tr from-accent/10 to-accent-light/10 rounded-2xl border border-border/50"></div>
+        <div className="aspect-[4/3] bg-gradient-to-bl from-emerald-500/10 to-teal-500/10 rounded-2xl border border-border/50"></div>
         <div className="col-span-2 h-16 bg-bg-secondary/50 rounded-2xl flex items-center px-4 gap-4 border border-border/50">
           <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
              <div className="w-5 h-5 bg-orange-500 rounded-sm opacity-80"></div>
@@ -74,7 +74,7 @@ const features = [
     id: 4,
     title: "Reactions & Emojis",
     description: "Express more with reactions, emojis, and GIFs. Sometimes a simple emoji says more than a thousand words. Quick-react to messages to keep the conversation flowing.",
-    icon: <Smile className="w-6 h-6 text-amber-500" />,
+    icon: <Smile className="w-6 h-6 text-emerald-500" />,
     mockup: (
       <div className="flex flex-col items-center gap-6 p-8 bg-bg-panel/80 backdrop-blur-md rounded-[2rem] border border-border shadow-xl relative">
         <div className="bg-bg-secondary px-6 py-3.5 rounded-2xl rounded-tl-sm relative shadow-sm text-text-primary text-[15px] w-full max-w-[85%] self-start">
@@ -98,7 +98,7 @@ const features = [
     id: 5,
     title: "Customization",
     description: "Change chat wallpapers and personalize your experience. Choose from built-in presets, select beautiful solid colors, or upload your own wallpaper.",
-    icon: <Palette className="w-6 h-6 text-teal-500" />,
+    icon: <Palette className="w-6 h-6 text-emerald-500" />,
     mockup: (
       <div className="flex items-center justify-center p-6 bg-bg-panel/80 backdrop-blur-md rounded-[2rem] border border-border shadow-xl h-full">
          <div className="w-[60%] aspect-[9/16] rounded-2xl border-[6px] border-bg-secondary shadow-lg overflow-hidden relative flex flex-col group transition-transform hover:scale-[1.02]">
@@ -120,8 +120,8 @@ export default function FeaturesSection() {
   return (
     <section id="features" className="py-24 md:py-32 px-6 bg-bg-primary relative overflow-hidden">
       {/* Decorative ambient background */}
-      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[300px] h-[300px] bg-accent-light/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto space-y-32 relative z-10">
         

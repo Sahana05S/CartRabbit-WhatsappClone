@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-[#e9edef] selection:bg-primary/30 antialiased overflow-hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-glass backdrop-blur-md border border-glass-border shadow-xl;
+  }
+  
+  .glass-card-heavy {
+    @apply bg-glass-heavy backdrop-blur-lg border border-glass-border shadow-2xl;
+  }
+
+  .glass-input {
+    @apply bg-glass-heavy border border-glass-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-200 rounded-lg px-4 py-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:scale-100;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-glass rounded-full p-2 transition-all duration-200 text-[#aebac1] hover:text-[#e9edef];
+  }
+
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+  }
+
+  .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .sidebar-panel {
+    @apply absolute inset-0 z-20 bg-dark-sidebar flex flex-col;
+  }
+
+  .chat-bubble-me {
+    @apply bg-dark-bubble-me text-[#e9edef] rounded-lg rounded-tr-none px-3 py-1.5 shadow-sm relative;
+  }
+
+  .chat-bubble-them {
+    @apply bg-dark-bubble-them text-[#e9edef] rounded-lg rounded-tl-none px-3 py-1.5 shadow-sm relative;
+  }
+}
+
+/* Custom transitions for Framer Motion or simple CSS */
+.panel-enter {
+  transform: translateX(-100%);
+}
+.panel-enter-active {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+.panel-exit {
+  transform: translateX(0);
+}
+.panel-exit-active {
+  transform: translateX(-100%);
+  transition: transform 300ms ease-in;
+}

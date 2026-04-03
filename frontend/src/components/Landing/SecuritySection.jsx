@@ -7,17 +7,17 @@ const securityFeatures = [
     description: "Industry-standard AES-GCM-256 encryption ensures your data remains protected from end to end."
   },
   {
-    icon: <KeySquare className="w-6 h-6 text-blue-400" />,
+    icon: <KeySquare className="w-6 h-6 text-emerald-400" />,
     title: "OAuth Login Support",
     description: "Sign in securely with your trusted providers like Google or GitHub without creating new passwords."
   },
   {
-    icon: <Fingerprint className="w-6 h-6 text-purple-400" />,
+    icon: <Fingerprint className="w-6 h-6 text-emerald-400" />,
     title: "Multi-Factor Authentication",
     description: "Add an optional layer of security with OTP or authenticator apps to protect your account."
   },
   {
-    icon: <Lock className="w-6 h-6 text-rose-400" />,
+    icon: <Lock className="w-6 h-6 text-emerald-400" />,
     title: "Session & Account Protection",
     description: "Advanced session management safeguards your account against unauthorized access and hijacking."
   }

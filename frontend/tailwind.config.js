@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -11,76 +15,76 @@ export default {
           hover:     'var(--bg-hover)',
           active:    'var(--bg-active)',
         },
-        accent: {
-          DEFAULT: 'var(--accent-default)',
-          light:   'var(--accent-light)',
-          dark:    'var(--accent-dark)',
-        },
-        surface: {
-          DEFAULT: 'var(--surface-default)',
-          light:   'var(--surface-light)',
-        },
         text: {
           primary:   'var(--text-primary)',
           secondary: 'var(--text-secondary)',
           muted:     'var(--text-muted)',
         },
-        bubble: {
-          in: 'var(--bubble-in)',
-          out: 'var(--bubble-out)',
-        },
         border: {
           DEFAULT: 'var(--border-color)',
+        },
+        primary: {
+          DEFAULT: '#00A884',
+          dark: '#008F72',
+          light: '#00C298',
+        },
+        accent: {
+          DEFAULT: 'var(--accent-default)',
+          light: 'var(--accent-light)',
+          dark: 'var(--accent-dark)',
+          glow: 'rgba(0, 168, 132, 0.5)',
+        },
+        glass: {
+          DEFAULT: 'rgba(255, 255, 255, 0.05)',
+          heavy: 'rgba(255, 255, 255, 0.1)',
+          border: 'rgba(255, 255, 255, 0.1)',
+        },
+        dark: {
+          bg: '#0b141a',
+          sidebar: '#111b21',
+          chat: '#0b141a',
+          bubble: {
+            me: '#005c4b',
+            them: '#202c33',
+          },
+          panel: '#222e35',
         }
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+      backgroundImage: {
+        'chat-pattern': "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
+        'ambient-gradient': 'radial-gradient(circle at top right, rgba(0, 168, 132, 0.15), transparent), radial-gradient(circle at bottom left, rgba(83, 189, 235, 0.15), transparent)',
+      },
+      backdropBlur: {
+        xs: '2px',
       },
       animation: {
-        'slide-up':         'slideUp 0.2s ease-out',
-        'slide-up-right':   'slideUpRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        'slide-up-left':    'slideUpLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        'fade-in':          'fadeIn 0.25s ease-out',
-        'scale-in':         'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-        'spin-slow':        'spin 1.5s linear infinite',
-        'highlight-flash':  'highlightFlash 1.4s ease-out forwards',
-        'slide-in-right':   'slideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-in-left': 'slideInLeft 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
+        'fade-in': 'fadeIn 0.2s ease-in',
+        'pulse-glow': 'pulseGlow 2s infinite',
       },
       keyframes: {
-        slideUp: {
-          '0%':   { transform: 'translateY(6px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)',   opacity: '1' },
-        },
-        slideUpRight: {
-          '0%':   { transform: 'translateY(10px) translateX(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0) translateX(0)',   opacity: '1' },
-        },
-        slideUpLeft: {
-          '0%':   { transform: 'translateY(10px) translateX(-10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0) translateX(0)',   opacity: '1' },
-        },
-        fadeIn: {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        scaleIn: {
-          '0%':   { transform: 'scale(0.8) translateY(2px)', opacity: '0' },
-          '100%': { transform: 'scale(1) translateY(0)',    opacity: '1' },
-        },
-        highlightFlash: {
-          '0%':   { backgroundColor: 'var(--highlight)' },
-          '60%':  { backgroundColor: 'var(--highlight)' },
-          '100%': { backgroundColor: 'transparent' },
+        slideInLeft: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
         },
         slideInRight: {
-          '0%':   { transform: 'translateX(100%)', opacity: '0' },
-          '100%': { transform: 'translateX(0)',     opacity: '1' },
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
         },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        pulseGlow: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
+        }
       },
       boxShadow: {
-        accent: '0 4px 24px rgba(124, 58, 237, 0.25)',
+        accent: '0 4px 24px rgba(0, 168, 132, 0.25)',
         panel:  '0 8px 32px rgba(0, 0, 0, 0.4)',
-      },
+      }
     },
   },
   plugins: [],

@@ -1,0 +1,10 @@
+0857142 Added MFA
+e9767e0 Added a Landing Page
+9eca6c0 Added End to End Encryption
+26cc76a Added Chat Wallpapers
+7833d3c Updated Readme
+4c3868a Added Stickers and GIFs
+f32400f Added Profile and App Settings
+402a76d Added Voice Chat
+50ea69b Fixed Group Chat
+9148133 Added Media Gallery

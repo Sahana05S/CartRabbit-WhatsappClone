@@ -19,34 +19,35 @@ export default function LandingNavbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 px-6 py-4 bg-bg-primary/80 backdrop-blur-xl z-50 border-b border-border transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 px-6 py-4 bg-bg-primary backdrop-blur-xl z-50 border-b border-border transition-all">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="NexTalk Logo" className="w-10 h-10 rounded-xl transition-transform group-hover:scale-105 shadow-sm border border-border/50" />
-            <span className="text-xl font-bold text-text-primary tracking-tight">NexTalk</span>
-          </div>
-          
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8 text-[15px] font-semibold text-text-secondary">
-            <button onClick={() => scrollTo('features')} className="hover:text-text-primary transition-colors">Features</button>
-            <button onClick={() => scrollTo('security')} className="hover:text-text-primary transition-colors">Security</button>
+          {/* Desktop Nav & Logo Group */}
+          <div className="flex items-center gap-12">
+            <div className="flex items-center gap-2 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <img src="/logo.png" alt="NexTalk Logo" className="w-10 h-10 rounded-xl transition-transform group-hover:scale-105 shadow-sm border border-border/50" />
+              <span className="text-xl font-bold text-text-primary tracking-tight">NexTalk</span>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-6 text-[14px] font-semibold text-text-secondary">
+              <button onClick={() => scrollTo('features')} className="hover:text-accent transition-colors">Features</button>
+              <button onClick={() => scrollTo('security')} className="hover:text-accent transition-colors">Security</button>
+            </div>
           </div>
           
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2">
             <button 
               onClick={toggleTheme} 
-              className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors rounded-full"
+              className="p-2 text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors rounded-xl mr-2"
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <Link to="/login" className="text-[15px] font-bold text-text-primary hover:text-accent transition-colors ml-2">
+            <Link to="/login" className="px-4 py-2 text-[14px] font-bold text-text-primary hover:text-accent transition-colors">
               Login
             </Link>
-            <Link to="/register" className="px-6 py-2.5 text-[15px] font-bold bg-accent hover:bg-accent-light text-white rounded-full transition-all shadow-accent shadow-md hover:-translate-y-0.5 ml-2">
+            <Link to="/register" className="px-6 py-2.5 text-[14px] font-bold bg-accent hover:bg-accent-light text-white rounded-full transition-all shadow-accent shadow-md hover:-translate-y-0.5">
               Get Started
             </Link>
           </div>

@@ -3,6 +3,7 @@ import { X, Search, Send, Check, Loader2, Users } from 'lucide-react';
 import api from '../../api/axios';
 import { getInitials } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
+import { useE2EE } from '../../context/E2EEContext';
 
 export default function ForwardModal({ message, onClose }) {
   const [users,       setUsers]       = useState([]);
@@ -13,6 +14,7 @@ export default function ForwardModal({ message, onClose }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [error,       setError]       = useState('');
   const { onlineUsers } = useSocket();
+  const { encryptFor, decryptMsg, isE2EEReady } = useE2EE();
   const inputRef = useRef(null);
 
   // Load user list on mount
@@ -41,17 +43,42 @@ export default function ForwardModal({ message, onClose }) {
   };
 
   const handleForward = async () => {
-    if (!selected.size || sending) return;
     try {
       setSending(true);
       setError('');
-      await api.post(`/messages/${message._id}/forward`, {
-        receiverIds: [...selected],
-      });
+
+      if (message.isE2EE) {
+        // Multi-recipient E2EE forward must be handled individually by re-encrypting per peer
+        const plaintext = await decryptMsg(message);
+        if (plaintext === null) {
+          throw new Error('Could not decrypt original message to forward it.');
+        }
+
+        const forwardPromises = [...selected].map(async (receiverId) => {
+          const envelope = await encryptFor(receiverId, plaintext);
+          if (!envelope) throw new Error(`Encryption failed for recipient: ${receiverId}`);
+          
+          return api.post('/messages', {
+            receiverId,
+            text: '',
+            isE2EE: true,
+            e2ee: envelope,
+            isForwarded: true
+          });
+        });
+
+        await Promise.all(forwardPromises);
+      } else {
+        // Standard forward for plain messages/media
+        await api.post(`/messages/${message._id}/forward`, {
+          receiverIds: [...selected],
+        });
+      }
+
       setSent(true);
       setTimeout(onClose, 900);
     } catch (err) {
-      setError(err.response?.data?.message || 'Forward failed. Try again.');
+      setError(err.message || err.response?.data?.message || 'Forward failed. Try again.');
       setSending(false);
     }
   };

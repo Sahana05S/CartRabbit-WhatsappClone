@@ -42,7 +42,7 @@ export async function saveKeyPair(keyPair) {
   return new Promise((resolve, reject) => {
     const tx    = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const req   = store.put({ id: KEY_ID, privateKey: keyPair.privateKey, publicKey: keyPair.publicKey });
+    const req   = store.put({ id: KEY_ID, privateKey: keyPair.privateKey, publicKey: keyPair.publicKey, sessionSalt: keyPair.sessionSalt });
     req.onsuccess = () => resolve();
     req.onerror   = (e) => reject(e.target.error);
   });
@@ -64,7 +64,7 @@ export async function loadKeyPair() {
       req.onsuccess = (e) => {
         const record = e.target.result;
         if (record) {
-          resolve({ privateKey: record.privateKey, publicKey: record.publicKey });
+          resolve({ privateKey: record.privateKey, publicKey: record.publicKey, sessionSalt: record.sessionSalt });
         } else {
           resolve(null);
         }

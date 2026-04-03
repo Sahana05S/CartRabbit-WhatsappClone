@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body, #root {
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Theme Tokens */
+  :root, [data-theme="light"] {
+    --bg-primary: #efeae2;
+    --chat-bg-image: url('/doodle-light.jpg');
+    --bg-secondary: #f0f2f5;
+    --bg-panel: #ffffff;
+    --bg-hover: #f5f6f6;
+    --bg-active: #ebebeb;
+    
+    --accent-default: #00a884;
+    --accent-light: #25d366;
+    --accent-dark: #008069;
+    
+    --surface-default: #ffffff;
+    --surface-light: #d9fdd3;
+  
+    --text-primary: #111b21;
+    --text-secondary: #54656f;
+    --text-muted: #667781;
+
+    --bubble-in: #ffffff;
+    --bubble-out: #d9fdd3;
+    
+    --highlight: rgba(0, 168, 132, 0.2);
+    --border-color: rgba(11, 20, 26, 0.1);
+  }
+
+  [data-theme="dark"] {
+    --bg-primary: #0b141a;   /* Chat background */
+    --chat-bg-image: url('/doodle-dark.jpg');
+    --bg-secondary: #111b21; /* Sidebar, header, footer */
+    --bg-panel: #202c33;     /* Modals, info panel */
+    --bg-hover: #202c33;
+    --bg-active: #2a3942;
+
+    --accent-default: #00a884;
+    --accent-light: #00a884;
+    --accent-dark: #005c4b;
+    
+    --surface-default: #202c33;
+    --surface-light: #202c33;
+
+    --text-primary: #e9edef;
+    --text-secondary: #8696a0;
+    --text-muted: #8696a0;
+
+    --bubble-in: #202c33; /* Incoming bubble */
+    --bubble-out: #005c4b; /* Outgoing bubble */
+    
+    --highlight: rgba(0, 168, 132, 0.1);
+    --border-color: #222d34; /* WhatsApp dark mode borders */
+  }
+
+  @keyframes slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .animate-slide-down {
+    animation: slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(134, 150, 160, 0.4); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(134, 150, 160, 0.6); }
+
+  /* Selection */
+  ::selection { background: var(--accent-light); opacity: 0.3; color: #fff; }
+
+  input, textarea {
+    outline: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed
+           text-white font-semibold py-3 px-5 rounded-xl transition-all duration-200
+           flex items-center justify-center gap-2
+           shadow-accent hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .input-field {
+    @apply w-full bg-bg-secondary border border-border rounded-xl px-4 py-3
+           text-text-primary placeholder:text-text-muted text-sm
+           focus:border-accent focus:ring-1 focus:ring-accent
+           transition-all duration-200;
+  }
+
+  .avatar {
+    @apply rounded-full flex items-center justify-center text-white font-bold
+           flex-shrink-0 select-none;
+  }
+
+  .reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal-on-scroll.is-revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .delay-100 { transition-delay: 100ms; }
+  .delay-200 { transition-delay: 200ms; }
+  .delay-300 { transition-delay: 300ms; }
+  .delay-400 { transition-delay: 400ms; }
+}

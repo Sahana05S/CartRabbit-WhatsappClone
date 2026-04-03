@@ -28,11 +28,12 @@ export async function initE2EE() {
   if (!keyPair) {
     // First-time setup on this device
     keyPair = await generateIdentityKeyPair();
+    keyPair.sessionSalt = generateSessionSalt();
     await saveKeyPair(keyPair);
   }
 
   // Always (re)upload the public key in case the server lost it
-  await uploadPublicKey(keyPair.publicKey);
+  await uploadPublicKey(keyPair.publicKey, keyPair.sessionSalt);
 
   return keyPair;
 }
@@ -44,10 +45,9 @@ export async function initE2EE() {
  * The server stores only the public key — private key never leaves IndexedDB.
  * A new random salt is generated each time (upgrading the session key for new chats).
  */
-async function uploadPublicKey(publicKey) {
+async function uploadPublicKey(publicKey, sessionSalt) {
   try {
     const identityKey = await exportPublicKey(publicKey);
-    const sessionSalt = generateSessionSalt();
 
     await api.post('/keys/upload', { identityKey, sessionSalt });
   } catch (err) {
