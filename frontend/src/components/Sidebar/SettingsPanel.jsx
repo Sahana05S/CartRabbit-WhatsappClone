@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { ArrowLeft, UserCircle, Bell, Shield, MessageSquare, Monitor, Sun, Moon, Volume2, Globe, Command, Eye, CheckCircle2, Upload } from 'lucide-react';
+import { ArrowLeft, UserCircle, Bell, Shield, MessageSquare, Monitor, Sun, Moon, Volume2, Globe, Command, Eye, CheckCircle2, Upload, Lock, Key, Copy, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../api/axios';
@@ -10,6 +10,12 @@ export default function SettingsPanel({ onClose }) {
   const [activeCategory, setActiveCategory] = useState(null); // null = menu list
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // MFA Flow States
+  const [mfaSetupData, setMfaSetupData] = useState(null);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaRecoveryCodes, setMfaRecoveryCodes] = useState(null);
+  const [mfaError, setMfaError] = useState('');
 
   const settings = currentUser?.settings || {
     privacy: { lastSeen: true, onlineStatus: true, readReceipts: true },
@@ -83,8 +89,66 @@ export default function SettingsPanel({ onClose }) {
     updateSetting(category, key, nextValue);
   };
 
+  const initMfaSetup = async () => {
+    try {
+      setLoading(true);
+      setMfaError('');
+      const { data } = await api.post('/auth/mfa/setup');
+      setMfaSetupData(data.data);
+    } catch (err) {
+      setMfaError(err.response?.data?.message || 'Failed to initialize MFA.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyAndEnableMfa = async () => {
+    try {
+      setLoading(true);
+      setMfaError('');
+      const { data } = await api.post('/auth/mfa/verify-enable', { token: mfaToken });
+      
+      setMfaRecoveryCodes(data.data.recoveryCodes);
+      setMfaSetupData(null);
+      setMfaToken('');
+      
+      updateUser({ ...currentUser, mfaEnabled: true, mfaEnabledAt: new Date().toISOString() });
+    } catch (err) {
+      setMfaError(err.response?.data?.message || 'Invalid verification code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegenerateCodes = async () => {
+    if (!window.confirm("Are you sure? This will permanently invalidate all your existing recovery codes!")) return;
+    try {
+      setLoading(true);
+      setMfaError('');
+      const { data } = await api.post('/auth/mfa/regenerate-recovery-codes');
+      setMfaRecoveryCodes(data.data.recoveryCodes);
+    } catch (err) {
+      setMfaError(err.response?.data?.message || 'Failed to regenerate codes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadCodes = () => {
+    if (!mfaRecoveryCodes) return;
+    const content = `NexTalk Recovery Codes\nGenerated: ${new Date().toLocaleString()}\n\n${mfaRecoveryCodes.join('\n')}\n\nKeep these secure. They are your only way to log in if you lose your authenticator app.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'nextalk-recovery-codes.txt';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const categories = [
     { id: 'privacy',   label: 'Privacy',        icon: Shield,        desc: 'Last seen, online status' },
+    { id: 'security',  label: 'Security',       icon: Lock,          desc: 'Two-step verification (MFA)' },
     { id: 'notifications', label: 'Notifications',  icon: Bell,          desc: 'Message sounds' },
     { id: 'chat',      label: 'Chat Settings',  icon: MessageSquare, desc: 'Enter to send, theme' },
     { id: 'appearance', label: 'Appearance',     icon: Monitor,       desc: 'Theme, wallpaper' }
@@ -97,7 +161,13 @@ export default function SettingsPanel({ onClose }) {
     return (
       <div className="absolute inset-0 bg-bg-secondary flex flex-col z-30 animate-slide-right">
         <div className="h-[108px] bg-bg-panel border-b border-border flex items-end px-6 pb-4 gap-6 shrink-0 transition-colors">
-          <button onClick={() => setActiveCategory(null)} className="p-1 text-text-primary hover:bg-white/5 rounded-full transition-colors mb-0.5">
+          <button onClick={() => {
+            setActiveCategory(null);
+            setMfaSetupData(null);
+            setMfaRecoveryCodes(null);
+            setMfaToken('');
+            setMfaError('');
+          }} className="p-1 text-text-primary hover:bg-white/5 rounded-full transition-colors mb-0.5">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h2 className="text-[19px] font-semibold text-text-primary">{CatLabel}</h2>
@@ -132,6 +202,140 @@ export default function SettingsPanel({ onClose }) {
                 disabled={loading}
               />
             </>
+          )}
+
+          {activeCategory === 'security' && (
+            <div className="space-y-6">
+              
+              {/* If MFA is newly enabled and we have recovery codes to show exactly ONCE */}
+              {mfaRecoveryCodes ? (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 mb-4">
+                  <div className="flex items-center gap-3 mb-4 text-emerald-400">
+                    <CheckCircle2 className="w-6 h-6" />
+                    <h3 className="font-bold text-lg">Two-Step Verification is ON</h3>
+                  </div>
+                  <p className="text-sm text-emerald-100/70 mb-4 leading-relaxed">
+                    Save these recovery codes in a secure place. This is the <strong>only time</strong> they will be shown. You can use them to sign in if you lose a device.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 bg-bg-primary/50 p-4 rounded-xl font-mono text-sm text-text-primary">
+                    {mfaRecoveryCodes.map((code, idx) => (
+                      <div key={idx} className="tracking-widest">{code}</div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button onClick={() => { navigator.clipboard.writeText(mfaRecoveryCodes.join('\n')); alert('Copied to clipboard!') }} className="flex-1 py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover transition-colors text-sm font-semibold border border-border">
+                      Copy
+                    </button>
+                    <button onClick={handleDownloadCodes} className="flex-1 py-2 rounded-lg bg-bg-secondary hover:bg-bg-hover transition-colors text-sm font-semibold border border-border">
+                      Download
+                    </button>
+                  </div>
+                </div>
+              ) : currentUser.mfaEnabled ? (
+                
+                /* MFA is already enabled, show regular status */
+                <div className="flex flex-col items-center bg-bg-panel border border-border rounded-3xl p-8 text-center shadow-sm">
+                   <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 ring-8 ring-emerald-500/5">
+                     <Shield className="w-8 h-8" />
+                   </div>
+                   <h3 className="text-xl font-bold text-text-primary mb-2">MFA is Active</h3>
+                   <p className="text-sm text-text-muted mb-6">
+                     Your account is protected by an extra layer of security.
+                   </p>
+                   
+                   {mfaError && (
+                     <div className="flex items-center gap-2 text-red-400 text-xs bg-red-400/10 p-3 rounded-xl border border-red-400/20 w-full mb-4">
+                       <AlertTriangle className="w-4 h-4 shrink-0" />
+                       {mfaError}
+                     </div>
+                   )}
+
+                   <div className="flex flex-col gap-3 w-full">
+                     <button 
+                       onClick={handleRegenerateCodes}
+                       disabled={loading}
+                       className="px-6 py-3 bg-bg-secondary hover:bg-bg-hover text-text-primary text-sm font-semibold rounded-xl outline-none transition-colors w-full border border-border flex items-center justify-center gap-2"
+                     >
+                       Regenerate Recovery Codes
+                     </button>
+                     <button 
+                       disabled={true} 
+                       className="px-6 py-2 bg-transparent text-red-400 opacity-50 cursor-not-allowed text-xs font-bold rounded-xl outline-none transition-colors w-full"
+                     >
+                       Disable MFA (Coming Soon)
+                     </button>
+                   </div>
+                </div>
+
+              ) : (
+
+                /* MFA is NOT enabled */
+                <div className="space-y-6">
+                  {!mfaSetupData ? (
+                    <div className="flex flex-col items-center bg-bg-panel border border-border rounded-3xl p-8 text-center shadow-sm">
+                      <div className="w-16 h-16 bg-accent/10 text-accent-light rounded-full flex items-center justify-center mb-4 ring-8 ring-accent/5">
+                        <Key className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-xl font-bold text-text-primary mb-2">Two-Step Verification</h3>
+                      <p className="text-[13px] text-text-muted leading-relaxed mb-6">
+                        For extra security, require a 6-digit code from an authenticator app when you log in.
+                      </p>
+                      <button 
+                        onClick={initMfaSetup}
+                        disabled={loading}
+                        className="w-full bg-accent hover:bg-accent-dark text-white font-semibold py-3 px-5 rounded-xl transition-all shadow-accent hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {loading ? 'Initializing...' : 'Turn On'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col bg-bg-panel border border-border rounded-3xl p-6 shadow-sm">
+                      <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
+                        <Lock className="w-5 h-5 text-accent-light" />
+                        Set Up Authenticator
+                      </h3>
+                      
+                      <div className="bg-bg-primary rounded-xl p-4 flex flex-col items-center mb-5 border border-border/50">
+                        <img src={mfaSetupData.qrCodeDataUrl} alt="MFA QR Code" className="w-40 h-40 rounded-lg mb-4 opacity-90 shadow-sm" />
+                        <p className="text-xs text-text-muted mb-2 uppercase tracking-wide font-semibold">Or enter this key manually</p>
+                        <code className="bg-bg-secondary px-3 py-1.5 rounded-lg text-sm text-accent-light font-mono font-bold tracking-widest break-all text-center select-all">
+                          {mfaSetupData.manualEntryKey}
+                        </code>
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="text-sm font-semibold text-text-secondary">Verify with 6-digit code</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            maxLength={6}
+                            value={mfaToken}
+                            onChange={(e) => setMfaToken(e.target.value.replace(/[^0-9]/g, ''))}
+                            placeholder="000000"
+                            className="w-full bg-bg-secondary border border-border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted text-center tracking-[1em] font-mono text-lg focus:border-accent focus:ring-1 focus:ring-accent transition-all duration-200"
+                          />
+                        </div>
+
+                        {mfaError && (
+                          <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 p-3 rounded-xl border border-red-400/20">
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
+                            {mfaError}
+                          </div>
+                        )}
+
+                        <button 
+                          onClick={verifyAndEnableMfa}
+                          disabled={loading || mfaToken.length < 6}
+                          className="w-full bg-accent hover:bg-accent-dark text-white font-semibold py-3 px-5 rounded-xl transition-all shadow-accent hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+                        >
+                          {loading ? 'Verifying...' : 'Verify & Enable'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {activeCategory === 'notifications' && (

@@ -57,7 +57,7 @@ const login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password +mfaEnabled');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
@@ -65,6 +65,16 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+
+    if (user.mfaEnabled) {
+      // Issue a short-lived challenge token instead of the final auth token
+      const mfaToken = jwt.sign(
+        { id: user._id, mfaChallenge: true },
+        process.env.JWT_SECRET,
+        { expiresIn: '5m' }
+      );
+      return res.json({ success: true, mfaRequired: true, mfaToken });
     }
 
     const token = generateToken(user._id);
@@ -80,4 +90,4 @@ const getMe = async (req, res) => {
   res.json({ success: true, user: formatUser(req.user) });
 };
 
-module.exports = { register, login, getMe };
+module.exports = { register, login, getMe, generateToken, formatUser };

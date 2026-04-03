@@ -3,6 +3,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const passport = require('./config/passport');  // initialises GoogleStrategy
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
@@ -33,6 +35,8 @@ connectDB();
 // Express middleware
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
+app.use(passport.initialize()); // stateless – no session needed
 
 // Serve uploaded files as static assets
 const path = require('path');

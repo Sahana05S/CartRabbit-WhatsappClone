@@ -22,8 +22,19 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      // Optional for OAuth users
+      required: false,
       minlength: [6, 'Password must be at least 6 characters'],
+    },
+    googleId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
     },
     avatarColor: {
       type: String,
@@ -66,7 +77,53 @@ const userSchema = new mongoose.Schema(
         auth:    { type: String, required: true },
         p256dh:  { type: String, required: true }
       }
-    }]
+    }],
+
+    // ─── Multi-Factor Authentication (TOTP) ────────────────────────────────────
+    // All fields are nullable/off by default so existing users are never affected.
+
+    /**
+     * Whether the user has successfully enrolled TOTP-based MFA.
+     * Set to true only after the user verifies their first TOTP code.
+     */
+    mfaEnabled: {
+      type: Boolean,
+      default: false,
+      index: true,           // useful for admin queries / forced-MFA audits
+    },
+
+    /**
+     * The TOTP shared secret, stored AES-encrypted at rest.
+     * Encryption/decryption is handled in the controller (never in the model).
+     * Raw value is a base32 string compatible with apps like Google Authenticator.
+     * Intentionally excluded from default query projections (select: false).
+     */
+    mfaSecret: {
+      type: String,
+      default: null,
+      select: false,         // never sent to client accidentally
+    },
+
+    /**
+     * One-time recovery codes.
+     * Each entry is a bcrypt hash of the original code (never stored plain).
+     * A code is deleted from this array after it is used once.
+     * Recommended: generate 8–12 codes on enrolment.
+     */
+    mfaRecoveryCodes: {
+      type: [String],
+      default: [],
+      select: false,         // never sent to client accidentally
+    },
+
+    /**
+     * Timestamp of when MFA was successfully enabled.
+     * Useful for compliance, audit logs, and "MFA enabled since" UI labels.
+     */
+    mfaEnabledAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

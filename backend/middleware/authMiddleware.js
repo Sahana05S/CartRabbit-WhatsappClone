@@ -12,6 +12,11 @@ const protect = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // CRITICAL: Ensure challenge tokens cannot be used as standard authentication
+    if (decoded.mfaChallenge) {
+      return res.status(401).json({ success: false, message: 'Invalid token type. Completion required.' });
+    }
+
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'User belonging to this token no longer exists.' });
