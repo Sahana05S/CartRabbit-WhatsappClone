@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import { useSocket } from '../../context/SocketContext';
-import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star, Images, Users } from 'lucide-react';
+import { useE2EE } from '../../context/E2EEContext';
+import { MoreVertical, Search, Video, Phone, X, ChevronUp, ChevronDown, Star, Images, Users, Lock } from 'lucide-react';
 
 export default function ChatHeader({ user, searchProps, onOpenStarred, isGalleryOpen, onOpenGallery, isTyping }) {
   const { onlineUsers, socket } = useSocket();
+  const { isPeerSecure, isE2EEReady } = useE2EE();
   const isOnline = onlineUsers.includes(user._id);
   const [lastSeen, setLastSeen] = useState(user.lastSeen);
+  const [isPeerE2EE, setIsPeerE2EE] = useState(false);
   const searchInputRef = useRef(null);
 
   const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -14,6 +17,19 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
     if (!url) return null;
     return url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
   };
+
+  // Check if this direct chat peer has E2EE set up
+  useEffect(() => {
+    if (user.isGroup) {
+      setIsPeerE2EE(false);
+      return;
+    }
+    let cancelled = false;
+    isPeerSecure(user._id).then((secure) => {
+      if (!cancelled) setIsPeerE2EE(secure);
+    });
+    return () => { cancelled = true; };
+  }, [user._id, user.isGroup, isE2EEReady]);
 
   // Destructure search state passed from parent
   const {
@@ -100,7 +116,17 @@ export default function ChatHeader({ user, searchProps, onOpenStarred, isGallery
                       : 'offline'
               }
             </p>
+            {/* E2EE indicator — only for direct chats where peer has keys */}
+            {!user.isGroup && isPeerE2EE && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Lock className="w-2.5 h-2.5 text-emerald-400 opacity-80" />
+                <span className="text-[10px] text-emerald-400 opacity-80 font-medium tracking-wide">
+                  End-to-end encrypted
+                </span>
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Action buttons */}

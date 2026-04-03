@@ -88,6 +88,19 @@ const messageSchema = new mongoose.Schema(
     deletedAt:            { type: Date, default: null },
     isForwarded:          { type: Boolean, default: false },
     starredBy:            [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    // ── E2EE fields ────────────────────────────────────────────────────────
+    // All sub-fields are opaque blobs from the server's perspective.
+    // The server never reads, decrypts, or validates the cryptographic content.
+    isE2EE:   { type: Boolean, default: false },
+    isLegacy: { type: Boolean, default: false }, // true = message predates E2EE rollout
+    e2ee: {
+      version:    { type: Number, default: null },   // protocol version (1 for v1)
+      algorithm:  { type: String, default: null },   // e.g. "AES-GCM-256"
+      iv:         { type: String, default: null },   // base64 12-byte nonce
+      ciphertext: { type: String, default: null },   // base64 AES-GCM ciphertext
+      aad:        { type: String, default: null },   // base64 Additional Authenticated Data
+    },
   },
   { timestamps: true }
 );

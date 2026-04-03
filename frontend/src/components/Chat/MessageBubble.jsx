@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { formatMessageTime } from '../../utils/formatTime';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
-import { Reply, Trash2, Forward, Copy, Star, Check, Info } from 'lucide-react';
+import { useE2EE } from '../../context/E2EEContext';
+import { Reply, Trash2, Forward, Copy, Star, Check, Info, Lock } from 'lucide-react';
 import DeleteMessageMenu from './DeleteMessageMenu';
 import AttachmentMessage from './AttachmentMessage';
 import HighlightText from './HighlightText';
@@ -29,6 +30,7 @@ export default function MessageBubble({
   onStarToggle,         // (messageId, isStarred) => void  — update local state
 }) {
   const { currentUser } = useAuth();
+  const { decryptMsg }  = useE2EE();
   const [showPicker,     setShowPicker]     = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showForward,    setShowForward]    = useState(false);
@@ -36,6 +38,33 @@ export default function MessageBubble({
   const [copied,         setCopied]         = useState(false);
   const [starLoading,    setStarLoading]    = useState(false);
   const [contextMenu,    setContextMenu]    = useState(null);
+
+  // ── E2EE decryption state ─────────────────────────────────────────────
+  // 'pending' | 'decrypted' | 'failed'
+  const [decryptState,   setDecryptState]   = useState(message.isE2EE ? 'pending' : 'plain');
+  const [decryptedText,  setDecryptedText]  = useState(null);
+
+  useEffect(() => {
+    if (!message.isE2EE) return;
+    let cancelled = false;
+
+    const run = async () => {
+      const plaintext = await decryptMsg(message);
+      if (cancelled) return;
+      if (plaintext !== null) {
+        setDecryptedText(plaintext);
+        setDecryptState('decrypted');
+      } else {
+        setDecryptState('failed');
+      }
+    };
+
+    run();
+    return () => { cancelled = true; };
+  // We intentionally depend only on message._id to avoid re-running on
+  // every reaction/status update. The ciphertext never changes after creation.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [message._id, message.isE2EE]);
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -50,7 +79,13 @@ export default function MessageBubble({
                      (message.starredBy || []).map(id => id?.toString?.() ?? id).includes(currentUser?._id?.toString());
   const isText     = !message.messageType || message.messageType === 'text';
   const hasCaption = !isText && message.text;
-  const copyText   = isText ? message.text : (hasCaption ? message.text : null);
+
+  // For E2EE text messages, use decryptedText as the display text.
+  // copyText is set to null while decryption is pending or failed.
+  const displayText = message.isE2EE
+    ? (decryptState === 'decrypted' ? decryptedText : null)
+    : message.text;
+  const copyText = isText ? displayText : (hasCaption ? message.text : null);
 
   // ─── Reactions ─────────────────────────────────────────────────────────────
   const handleReact = async (emoji) => {
@@ -229,39 +264,60 @@ export default function MessageBubble({
 
             {/* Message content */}
             {message.messageType === 'audio' ? (
-              <AudioPlayer 
-                url={message.attachment?.fileUrl} 
-                duration={message.attachment?.duration} 
+              <AudioPlayer
+                url={message.attachment?.fileUrl}
+                duration={message.attachment?.duration}
               />
             ) : (message.messageType === 'image' || message.messageType === 'file') ? (
               <AttachmentMessage message={message} isSent={isSent} />
             ) : message.messageType === 'gif' ? (
               <div className="relative rounded-lg overflow-hidden bg-bg-secondary min-h-[100px]">
-                <img 
-                  src={message.giphy?.mediaUrl} 
-                  alt={message.giphy?.title || 'GIF'} 
+                <img
+                  src={message.giphy?.mediaUrl}
+                  alt={message.giphy?.title || 'GIF'}
                   className="w-full h-auto block"
                 />
               </div>
             ) : message.messageType === 'sticker' ? (
               <div className="relative flex justify-center">
-                <img 
-                  src={message.giphy?.mediaUrl} 
-                  alt={message.giphy?.title || 'Sticker'} 
+                <img
+                  src={message.giphy?.mediaUrl}
+                  alt={message.giphy?.title || 'Sticker'}
                   className="w-40 h-40 object-contain block"
                 />
               </div>
+            ) : message.isE2EE ? (
+              // ── E2EE text bubble content ──────────────────────────────────────
+              decryptState === 'pending' ? (
+                <p className="text-[14px] leading-relaxed text-text-muted italic animate-pulse">
+                  Decrypting…
+                </p>
+              ) : decryptState === 'failed' ? (
+                <p className="text-[13px] leading-relaxed text-text-muted italic flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                  Unable to decrypt message
+                </p>
+              ) : (
+                <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
+                  <HighlightText text={decryptedText} query={searchQuery} />
+                </p>
+              )
             ) : (
               <p className="text-[15px] leading-relaxed break-words whitespace-pre-wrap">
                 <HighlightText text={message.text} query={searchQuery} />
               </p>
             )}
 
-            {/* Time + read receipts + star indicator */}
+
+            {/* Time + read receipts + star indicator + lock badge */}
             <div className={`text-[10px] mt-1.5 flex items-center justify-end gap-1.5 font-medium ${isSent ? 'text-text-muted' : 'text-text-muted'}`}>
               {/* Star indicator — only visible when starred */}
               {isStarred && (
                 <Star className={`w-3 h-3 fill-current ${isSent ? 'text-yellow-300/80' : 'text-yellow-400/80'}`} />
+              )}
+              {/* E2EE lock badge */}
+              {message.isE2EE && decryptState !== 'failed' && (
+                <Lock className="w-3 h-3 opacity-60" title="End-to-end encrypted" />
               )}
               <span>{formatMessageTime(message.createdAt)}</span>
               {isSent && (
@@ -291,6 +347,7 @@ export default function MessageBubble({
               )}
             </div>
 
+
             {/* Reaction chips */}
             {Object.keys(reactionCounts).length > 0 && (
               <div className={`absolute -bottom-3 ${isSent ? 'right-2' : 'left-2'} flex items-center gap-1 animate-scale-in`}>
@@ -314,26 +371,34 @@ export default function MessageBubble({
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => { onReply?.(message); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Reply <Reply className="w-[15px] h-[15px] text-text-muted" /></button>
-              
+
               <button onClick={() => { setShowPicker(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">React <svg className="w-[15px] h-[15px] text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
-              
+
+              {/* Copy: only available when text is known (not pending/failed decrypt) */}
               {copyText && (
                 <button onClick={() => { handleCopy(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Copy <Copy className="w-[15px] h-[15px] text-text-muted" /></button>
               )}
 
               <button onClick={() => { handleStar(); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">{isStarred ? 'Unstar' : 'Star'} <Star className={`w-[15px] h-[15px] ${isStarred ? 'text-yellow-400 fill-current' : 'text-text-muted'}`} /></button>
 
-              {!message.isDeletedForEveryone && (
+              {/* Forward: blocked for E2EE messages (session-specific ciphertext) */}
+              {!message.isDeletedForEveryone && !message.isE2EE && (
                 <button onClick={() => { setShowForward(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Forward <Forward className="w-[15px] h-[15px] text-text-muted" /></button>
+              )}
+              {!message.isDeletedForEveryone && message.isE2EE && (
+                <div className="px-4 py-2 text-sm text-text-muted flex items-center justify-between cursor-not-allowed opacity-50" title="Encrypted messages cannot be forwarded">
+                  Forward <Forward className="w-[15px] h-[15px]" />
+                </div>
               )}
 
               {isSent && !message.isDeletedForEveryone && (
                 <button onClick={() => { setShowInfo(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-text-primary transition-colors flex items-center justify-between">Message info <Info className="w-[15px] h-[15px] text-text-muted" /></button>
               )}
-              
+
               <button onClick={() => { setShowDeleteMenu(true); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm text-red-500 transition-colors flex items-center justify-between">Delete <Trash2 className="w-[15px] h-[15px] text-red-400" /></button>
             </div>
           )}
+
 
         </div>
       </div>

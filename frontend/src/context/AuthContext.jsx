@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+import { wipeE2EE } from '../services/e2ee/keyService';
 
 const AuthContext = createContext(null);
 
@@ -48,7 +49,11 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Wipe E2EE key material from IndexedDB before clearing session.
+    // After this, old encrypted messages stored on the server cannot be
+    // decrypted from this device (accepted v1 constraint — no key backup).
+    try { await wipeE2EE(); } catch { /* best-effort */ }
     localStorage.removeItem('nextalk_token');
     localStorage.removeItem('nextalk_user');
     setCurrentUser(null);

@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, X, FileText, Image, Smile, Mic, Play, Box } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Smile, Mic } from 'lucide-react';
 import GifPicker from './GifPicker';
 import AudioRecorder from './AudioRecorder';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useE2EE } from '../../context/E2EEContext';
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
@@ -29,6 +30,7 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
   const { socket } = useSocket();
   const { theme } = useTheme();
   const { currentUser } = useAuth();
+  const { isE2EEReady, encryptFor } = useE2EE();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -146,7 +148,7 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
       let sentMessage;
 
       if (pendingFile) {
-        // ── Attachment send ────────────────────────────────
+        // ── Attachment send (plaintext — media E2EE is deferred to v2) ────────
         const formData = new FormData();
         formData.append('file',       pendingFile.file);
         formData.append('receiverId', receiverId);
@@ -169,18 +171,48 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
         sentMessage = data.message;
         clearPendingFile();
       } else {
-        // ── Text-only send ─────────────────────────────────
-        const payload = { receiverId, text: cleanText };
-        if (isGroup) payload.isGroup = true;
+        // ── Text-only send ─────────────────────────────────────────────────────
+        //
+        // For direct (non-group) chats we attempt E2EE encryption.
+        // If the peer has no key bundle the encrypt call returns null and
+        // we fall back to plaintext (existing behaviour) transparently.
+        let payload;
+
+        const shouldEncrypt = !isGroup && isE2EEReady;
+        let e2eeEnvelope = null;
+
+        if (shouldEncrypt) {
+          e2eeEnvelope = await encryptFor(receiverId, cleanText);
+        }
+
+        if (e2eeEnvelope) {
+          // ── Encrypted path ──────────────────────────────────────────────────
+          payload = {
+            receiverId,
+            text:  '',       // server stores empty string; content is in e2ee.ciphertext
+            isE2EE: true,
+            e2ee: e2eeEnvelope,
+          };
+        } else {
+          // ── Plaintext path (group, or peer has no keys) ──────────────────────
+          payload = { receiverId, text: cleanText };
+          if (isGroup) payload.isGroup = true;
+        }
+
         if (replyTo) {
+          // For E2EE messages we omit the preview text to avoid leaking
+          // content to the server via the reply snippet.
           payload.replyTo = {
             messageId:   replyTo._id,
             senderId:    replyTo.senderId?._id || replyTo.senderId,
             senderName:  replyTo.senderName,
-            previewText: replyTo.previewText || replyTo.text || '',
+            previewText: e2eeEnvelope
+              ? '🔒 Encrypted message'   // safe placeholder — no plaintext
+              : (replyTo.previewText || replyTo.text || ''),
             messageType: replyTo.messageType || 'text',
           };
         }
+
         const { data } = await api.post('/messages', payload);
         sentMessage = data.message;
       }

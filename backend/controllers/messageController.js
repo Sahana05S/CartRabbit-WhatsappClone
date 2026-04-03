@@ -6,24 +6,49 @@ const { sendPushNotification, getMessagePreview } = require('../utils/notificati
 // POST /api/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, replyTo, isGroup, giphy, messageType } = req.body;
+    const { receiverId, text, replyTo, isGroup, giphy, messageType, isE2EE, e2ee } = req.body;
     const senderId = req.user._id;
 
     if (!receiverId) {
       return res.status(400).json({ success: false, message: 'Receiver/Group is required.' });
     }
-    
+
     const isGifOrSticker = messageType === 'gif' || messageType === 'sticker';
-    if (!isGifOrSticker && (!text || !text.trim())) {
+    // For E2EE messages the text field is intentionally empty; content is in the e2ee envelope.
+    const hasTextContent = text && text.trim();
+    if (!isGifOrSticker && !isE2EE && !hasTextContent) {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
-    const messageData = { 
-      senderId, 
-      text: text ? text.trim() : '',
+    // Validate E2EE envelope when flag is set
+    if (isE2EE) {
+      if (!e2ee || !e2ee.iv || !e2ee.ciphertext || !e2ee.version) {
+        return res.status(400).json({
+          success: false,
+          message: 'Encrypted message is missing required e2ee fields (iv, ciphertext, version).',
+        });
+      }
+    }
+
+    const messageData = {
+      senderId,
+      text: isE2EE ? '' : (text ? text.trim() : ''),
       messageType: messageType || 'text',
-      giphy: giphy || null
+      giphy: giphy || null,
+      isE2EE: !!isE2EE,
     };
+
+    // Attach E2EE envelope — stored as opaque payload, server never reads content
+    if (isE2EE && e2ee) {
+      messageData.e2ee = {
+        version:    e2ee.version,
+        algorithm:  e2ee.algorithm || 'AES-GCM-256',
+        iv:         e2ee.iv,
+        ciphertext: e2ee.ciphertext,
+        aad:        e2ee.aad || null,
+      };
+    }
+
     if (isGroup) {
       messageData.chatType = 'group';
       messageData.groupId = receiverId;
@@ -56,13 +81,13 @@ const sendMessage = async (req, res) => {
     } else {
       io.to(receiverId.toString()).emit('newMessage', populated);
       io.to(senderId.toString()).emit('newMessage', populated);
-      
-      // Trigger Push Notification for direct messages
+
+      // Trigger Push Notification — body must never contain plaintext for E2EE messages
       const recipient = await User.findById(receiverId);
       if (recipient) {
         sendPushNotification(recipient, {
           title: req.user.displayName || req.user.username,
-          body:  getMessagePreview(populated),
+          body:  isE2EE ? '🔒 New encrypted message' : getMessagePreview(populated),
           senderId: senderId.toString()
         });
       }
@@ -74,6 +99,7 @@ const sendMessage = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to send message.' });
   }
 };
+
 
 // GET /api/messages/:userId — fetch conversation between current user and :userId
 const getMessages = async (req, res) => {
@@ -379,6 +405,17 @@ const forwardMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot forward a deleted message.' });
     }
 
+    // Block forwarding E2EE messages: the ciphertext is session-specific and
+    // cannot be decrypted by a different recipient. The client should prevent this,
+    // but we enforce it server-side as a safety net.
+    if (original.isE2EE) {
+      return res.status(400).json({
+        success: false,
+        message: 'Encrypted messages cannot be forwarded. The encryption is specific to the original conversation.',
+        code: 'E2EE_FORWARD_BLOCKED',
+      });
+    }
+
     // Must be a participant in the original chat
     if (original.chatType !== 'group') {
       if (
@@ -431,6 +468,7 @@ const forwardMessage = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to forward message.' });
   }
 };
+
 
 // POST /api/messages/:messageId/star  — toggle star for current user
 const toggleStar = async (req, res) => {
