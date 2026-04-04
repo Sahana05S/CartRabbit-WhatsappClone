@@ -75,8 +75,12 @@ const MessageList = forwardRef(function MessageList({
   }
 
   return (
-    <div ref={scrollContainerRef} className="h-full px-[5%] py-4 overflow-y-auto w-full absolute inset-0 custom-scrollbar">
-      <div className="flex flex-col pb-4">
+    <div
+      ref={scrollContainerRef}
+      className="h-full py-3 overflow-y-auto w-full absolute inset-0 custom-scrollbar"
+      style={{ scrollBehavior: 'smooth' }}
+    >
+      <div className="flex flex-col gap-y-[1px] pb-6">
         {messages.map((message) => {
           const isSent      = message.senderId._id === currentUser._id || message.senderId === currentUser._id;
           const isSearchHit = searchMatchIds?.includes(message._id);
@@ -99,7 +103,7 @@ const MessageList = forwardRef(function MessageList({
             />
           );
         })}
-        <div ref={bottomRef} className="h-4" />
+        <div ref={bottomRef} className="h-8" />
       </div>
     </div>
   );
