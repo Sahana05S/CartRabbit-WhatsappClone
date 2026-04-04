@@ -35,10 +35,31 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = await User.create({ username, email, password: hashedPassword });
-    const token = generateToken(user._id);
+    // Generate a verification token (24h expiry)
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
-    res.status(201).json({ success: true, token, user: formatUser(user) });
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      isVerified: false,
+      verificationToken: hashedToken,
+      verificationExpire: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Simulate sending email — print to console
+    const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+    const verifyUrl = `${CLIENT_URL}/verify-email/${rawToken}`;
+    console.log(`\n\n--- EMAIL VERIFICATION SIMULATION ---`);
+    console.log(`To verify the account for ${user.email}, open this link:\n`);
+    console.log(`${verifyUrl}\n`);
+    console.log(`--------------------------------------\n\n`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created! Please check your email (or server console) for a verification link before logging in.',
+    });
   } catch (error) {
     if (error.name === 'ValidationError') {
       const message = Object.values(error.errors)[0].message;
@@ -63,13 +84,21 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
+    // Block unverified accounts
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your inbox (or server console) for the verification link.',
+        unverified: true,
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
     if (user.mfaEnabled) {
-      // Issue a short-lived challenge token instead of the final auth token
       const mfaToken = jwt.sign(
         { id: user._id, mfaChallenge: true },
         process.env.JWT_SECRET,
@@ -89,6 +118,33 @@ const login = async (req, res) => {
 // GET /api/auth/me
 const getMe = async (req, res) => {
   res.json({ success: true, user: formatUser(req.user) });
+};
+
+// GET /api/auth/verify-email/:token
+const verifyEmail = async (req, res) => {
+  try {
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+      verificationToken: hashedToken,
+      verificationExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Verification link is invalid or has expired. Please register again.' });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = null;
+    user.verificationExpire = null;
+    await user.save({ validateBeforeSave: false });
+
+    const token = generateToken(user._id);
+    res.json({ success: true, message: 'Email verified! Welcome to NexTalk.', token, user: formatUser(user) });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify email.' });
+  }
 };
 
 // POST /api/auth/forgot-password
@@ -162,4 +218,4 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, generateToken, formatUser, forgotPassword, resetPassword };
+module.exports = { register, login, getMe, generateToken, formatUser, forgotPassword, resetPassword, verifyEmail };

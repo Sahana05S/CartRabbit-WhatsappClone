@@ -130,6 +130,11 @@ const userSchema = new mongoose.Schema(
     // ─── Forgot Password Fields ──────────────────────────────────────────────
     resetPasswordToken: String,
     resetPasswordExpire: Date,
+
+    // ─── Email Verification ──────────────────────────────────────────────────
+    isVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null },
+    verificationExpire: { type: Date, default: null },
   },
   { timestamps: true }
 );

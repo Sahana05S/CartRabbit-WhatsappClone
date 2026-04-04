@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
-const { register, login, getMe, forgotPassword, resetPassword } = require('../controllers/authController');
+const { register, login, getMe, forgotPassword, resetPassword, verifyEmail } = require('../controllers/authController');
 const { setupMfa, verifyEnableMfa, completeLoginMfa, recoveryLoginMfa, regenerateRecoveryCodes, disableMfa } = require('../controllers/mfaController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -13,6 +13,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
+router.get('/verify-email/:token', verifyEmail);
 router.get('/me', protect, getMe);
 
 // ── MFA routes ────────────────────────────────────────────────────────────────

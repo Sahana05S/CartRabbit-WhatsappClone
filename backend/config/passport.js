@@ -42,9 +42,12 @@ passport.use(
           user = await User.findOne({ email });
 
           if (user) {
-            // Attach googleId to existing account
+            // Attach googleId to existing account and auto-verify since Google confirmed the email
             user.googleId  = googleId;
             user.provider  = user.provider || 'google';
+            user.isVerified = true;
+            user.verificationToken = null;
+            user.verificationExpire = null;
             // Backfill avatar from Google if the user doesn't have one
             if (!user.avatarUrl && avatarUrl) user.avatarUrl = avatarUrl;
             await user.save();
@@ -58,9 +61,14 @@ passport.use(
               displayName: name,
               avatarUrl,
               provider: 'google',
+              isVerified: true, // Auto-verified via Google
               // password field is optional (see updated schema)
             });
           }
+        } else if (!user.isVerified) {
+             // If they signed up through Google but somehow were unverified (edge case), verify them
+             user.isVerified = true;
+             await user.save();
         }
 
         return done(null, user);
