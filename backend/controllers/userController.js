@@ -208,7 +208,10 @@ const addContact = async (req, res) => {
     }
 
     const peer = await User.findOne({
-      $or: [{ email: identifier.toLowerCase() }, { username: identifier }],
+      $or: [
+        { email: identifier.toLowerCase() }, 
+        { username: { $regex: new RegExp(`^${identifier}$`, 'i') } }
+      ],
     });
 
     if (!peer) {
@@ -246,7 +249,33 @@ const addContact = async (req, res) => {
   }
 };
 
+// GET /api/users/search?q=...
+const searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.json({ success: true, users: [] });
+    }
+
+    const currentUserId = req.user._id;
+    // Case-insensitive regex match on username
+    const users = await User.find({
+      _id: { $ne: currentUserId },
+      username: { $regex: q, $options: 'i' }
+    })
+      .select('_id username displayName email avatarUrl avatarColor bio')
+      .limit(10)
+      .lean();
+
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ success: false, message: 'Failed to search users.' });
+  }
+};
+
 module.exports = {
+  searchUsers,
   getAllUsers,
   getUserById,
   getMe,

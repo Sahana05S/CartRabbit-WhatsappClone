@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getAllUsers, getUserById, getMe, updateProfile, updateSettings, updateAvatar,
+  searchUsers, getAllUsers, getUserById, getMe, updateProfile, updateSettings, updateAvatar,
   uploadWallpaper, togglePinChat, toggleArchiveChat, addContact
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
@@ -14,6 +14,7 @@ router.patch('/settings', protect, updateSettings);
 router.post('/add', protect, addContact);
 router.post('/avatar', protect, upload.single('file'), multerErrorHandler, updateAvatar);
 router.post('/wallpaper', protect, upload.single('file'), multerErrorHandler, uploadWallpaper);
+router.get('/search', protect, searchUsers);
 router.get('/:id', protect, getUserById);
 router.post('/:id/pin', protect, togglePinChat);
 router.post('/:id/archive', protect, toggleArchiveChat);
