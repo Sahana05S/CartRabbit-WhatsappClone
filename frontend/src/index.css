@@ -122,7 +122,7 @@
   
   --bubble-in: #ffffff;
   --bubble-out: #d9fdd3;
-  --chat-bg-image: url('/doodle-light.jpg');
+  --chat-bg-image: url('/doodle-light.png');
 }
 
 .dark, [data-theme="dark"] {
@@ -147,7 +147,7 @@
   
   --bubble-in: #202c33;
   --bubble-out: #005c4b;
-  --chat-bg-image: url('/doodle-dark.jpg');
+  --chat-bg-image: url('/doodle-dark.png');
 }
 
 /* Custom transitions for Framer Motion or simple CSS */
