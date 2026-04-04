@@ -283,6 +283,13 @@ const deleteForEveryone = async (req, res) => {
     message.isDeletedForEveryone = true;
     message.deletedBy = userId;
     message.deletedAt = new Date();
+    
+    // Clear the actual content for privacy
+    message.text = '';
+    message.attachment = null;
+    message.giphy = null;
+    message.location = null;
+    
     await message.save();
 
     // Emit to participants so their UI updates instantly

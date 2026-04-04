@@ -40,6 +40,7 @@ const MessageBubble = ({
   onReply,
   onScrollToReply,
   onDeleteForMe,
+  onDeleteForEveryone,
   onStarToggle,
   isLastRead,
 }) => {
@@ -411,6 +412,7 @@ const MessageBubble = ({
         <DeleteMessageMenu
           isSent={isSent}
           onDeleteForMe={() => { onDeleteForMe(message._id); setShowDeleteMenu(false); }}
+          onDeleteForEveryone={() => { onDeleteForEveryone(message._id); setShowDeleteMenu(false); }}
           onClose={() => setShowDeleteMenu(false)}
         />
       )}

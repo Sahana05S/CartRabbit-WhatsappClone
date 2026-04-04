@@ -98,6 +98,15 @@ const MainChat = ({ selectedChat, onBack }) => {
     updateMessageStar(messageId, isStarred, currentUser?._id);
   }, [updateMessageStar, currentUser]);
 
+  const handleDeleteForEveryone = useCallback(async (messageId) => {
+    try {
+      await api.delete(`/messages/${messageId}/for-everyone`);
+      // The socket listener in useMessages will handle the local state update
+    } catch (err) {
+      console.error('Delete for everyone failed', err);
+    }
+  }, []);
+
   const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
   const resolveAvatar = (url) => {
     if (!url) return null;
@@ -234,6 +243,7 @@ const MainChat = ({ selectedChat, onBack }) => {
             selectedUser={selectedChat}
             onReply={handleReply}
             onDeleteForMe={removeMessageLocally}
+            onDeleteForEveryone={handleDeleteForEveryone}
             onStarToggle={handleStarToggle}
             searchQuery={search.query}
             searchMatchIds={search.matchIds}

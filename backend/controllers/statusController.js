@@ -48,8 +48,13 @@ const createStatus = async (req, res) => {
 
 const getStatuses = async (req, res) => {
   try {
-    // Return all unexpired statuses, since we might want to group by user on the frontend
-    const statuses = await Status.find({})
+    const userId = req.user._id;
+    const currentUser = await User.findById(userId).select('contacts');
+    
+    // Statuses visible to me: my own + statuses from my contacts
+    const visibleUserIds = [userId, ...(currentUser.contacts || [])];
+
+    const statuses = await Status.find({ userId: { $in: visibleUserIds } })
       .sort({ createdAt: 1 }) // Ascending by default for stories
       .populate('userId', 'username avatarColor avatarUrl displayName')
       .populate('viewers', 'username avatarColor avatarUrl displayName');

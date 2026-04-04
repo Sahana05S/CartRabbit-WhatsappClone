@@ -7,7 +7,7 @@ import LoadingState from '../ui/LoadingState';
 import ErrorState from '../ui/ErrorState';
 
 const MessageList = forwardRef(function MessageList({
-  messages, loading, error, onReply, onDeleteForMe, onStarToggle,
+  messages, loading, error, onReply, onDeleteForMe, onDeleteForEveryone, onStarToggle,
   searchQuery, searchMatchIds, searchActiveId,
 }, ref) {
   const { currentUser } = useAuth();
@@ -99,6 +99,7 @@ const MessageList = forwardRef(function MessageList({
               onReply={onReply}
               onScrollToReply={scrollToMessage}
               onDeleteForMe={onDeleteForMe}
+              onDeleteForEveryone={onDeleteForEveryone}
               onStarToggle={onStarToggle}
             />
           );

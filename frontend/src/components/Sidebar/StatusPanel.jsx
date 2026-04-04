@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { formatPreviewTime } from '../../utils/formatTime';
 
 const StatusPanel = ({ onClose, onOpenViewer }) => {
   const { currentUser } = useAuth();
+  const { socket } = useSocket();
   const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -31,7 +33,33 @@ const StatusPanel = ({ onClose, onOpenViewer }) => {
       }
     };
     fetchStatuses();
-  }, []);
+
+    if (socket) {
+      const handleNewStatus = (newStatus) => {
+        // Only add if it's from current user or their contact
+        // (The backend already filters getStatuses, but real-time needs it too)
+        if (newStatus.userId._id === currentUser?._id || currentUser?.contacts?.includes(newStatus.userId._id)) {
+          setStatuses(prev => {
+            // Avoid duplicates
+            if (prev.find(s => s._id === newStatus._id)) return prev;
+            return [...prev, newStatus];
+          });
+        }
+      };
+
+      const handleStatusDeleted = ({ statusId }) => {
+        setStatuses(prev => prev.filter(s => s._id !== statusId));
+      };
+
+      socket.on('newStatus', handleNewStatus);
+      socket.on('statusDeleted', handleStatusDeleted);
+
+      return () => {
+        socket.off('newStatus', handleNewStatus);
+        socket.off('statusDeleted', handleStatusDeleted);
+      };
+    }
+  }, [socket, currentUser]);
 
   // Group statuses by user
   const groupedStatuses = statuses.reduce((acc, status) => {
