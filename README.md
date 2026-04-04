@@ -2,6 +2,8 @@
 
 # NexTalk
 
+### [Check it out here](https://nextalk-kappa.vercel.app/)
+
 ### A production-grade, real-time chat application inspired by WhatsApp Web
 
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
