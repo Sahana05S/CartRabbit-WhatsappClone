@@ -2,7 +2,7 @@
 
 # NexTalk
 
-### [Check it out here](https://nextalk-kappa.vercel.app/)
+### [Check out the live site here](https://nextalk-kappa.vercel.app/)
 
 ### A production-grade, real-time chat application inspired by WhatsApp Web
 
