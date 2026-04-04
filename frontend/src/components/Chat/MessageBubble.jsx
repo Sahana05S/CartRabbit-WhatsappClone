@@ -190,8 +190,8 @@ const MessageBubble = ({
               ) : (
                 <div className="text-[15px] leading-relaxed break-words whitespace-pre-wrap font-medium">
                   {message.isE2EE ? (
-                    decryptState === 'pending' ? <span className="italic opacity-50">Decrypting...</span> :
-                    decryptState === 'failed' ? <span className="italic opacity-50 flex items-center gap-1" title="Private keys are wiped on logout for safety. Old messages are now undecipherable locally."><Lock className="w-3 h-3" /> Undecipherable (keys reset)</span> :
+                    decryptState === 'pending' ? <span className="italic opacity-40 text-[13px]">Decrypting…</span> :
+                    decryptState === 'failed' ? <span className="italic opacity-40 text-[13px]">(encrypted — keys unavailable)</span> :
                     <HighlightText text={decryptedText} query={searchQuery} />
                   ) : <HighlightText text={message.text} query={searchQuery} />}
                 </div>
@@ -205,7 +205,7 @@ const MessageBubble = ({
                 : 'text-text-muted'
               }`}>
               {isStarred && <Star className="w-3 h-3 fill-current text-yellow-500" />}
-              {message.isE2EE && decryptState !== 'failed' && <Lock className="w-3 h-3" />}
+              {message.isE2EE && decryptState === 'decrypted' && <Lock className="w-3 h-3" />}
               <span>{formatMessageTime(message.createdAt)}</span>
               {isLastRead && message.status === 'read' && <span className="ml-1 uppercase tracking-tighter opacity-70">Seen at {formatMessageTime(message.updatedAt || message.createdAt)}</span>}
               {isSent && (

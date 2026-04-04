@@ -114,7 +114,7 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
         sentMessage = data.message;
         clearPendingFile();
       } else {
-        const shouldEncrypt = !isGroup && isE2EEReady;
+        const shouldEncrypt = false; // E2EE disabled: all messages sent as plaintext
         let e2eeEnvelope = null;
 
         if (shouldEncrypt) {
