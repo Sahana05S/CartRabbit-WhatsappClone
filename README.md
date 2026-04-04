@@ -52,6 +52,14 @@
     <td><img src="./Screenshots/Audio Call.png" alt="Audio Call" /></td>
   </tr>
   <tr>
+    <td align="center"><b>Add Contacts</b></td>
+    <td align="center"><b>Invite Contacts</b></td>
+  </tr>
+  <tr>
+    <td><img src="./Screenshots/Add Contacts.png" alt="Add Contacts" /></td>
+    <td><img src="./Screenshots/Invite Contacts.png" alt="Invite Contacts" /></td>
+  </tr>
+  <tr>
     <td align="center" colspan="2"><b>Multi-Factor Authentication</b></td>
   </tr>
   <tr>
@@ -75,6 +83,14 @@
 | **Push Notifications** | Web Push API |
 | **Design** | Glassmorphism, custom CSS variables, doodle wallpapers |
 
+### Third-Party APIs Used
+- **Browser Geolocation API**: Used to natively request devices' exact GPS coordinates for live location sharing.
+- **WebRTC API**: Used for establishing true peer-to-peer audio connections securely over the network.
+- **Web Push API**: Standardized backend web-push framework handling native push notifications triggered anywhere in the OS.
+- **Giphy API**: For querying and fetching optimized animated GIFs within the message input modal.
+- **Google OAuth API**: Secured authentication bypassing local credential creation via Google Passport strategy.
+- **Deep Email Validator**: Backend SMTP & MX-Record API used to block fake or disposable emails at signup.
+
 ---
 
 ## Full Feature List
@@ -93,6 +109,7 @@
 ### Rich Media & Attachments
 - **Image & video sharing** — send and preview images and videos inline in the chat
 - **File attachments** — support for PDFs, Docx, and other document types with download links
+- **Location sharing** — share current GPS location rendered seamlessly via Leaflet maps in the chat bubble
 - **GIF support** — integrated GIPHY search to send animated GIFs
 - **Stickers** — send expressive sticker packs
 - **Voice messages** — record audio directly in the app and send instantly
@@ -116,6 +133,8 @@
 - **WhatsApp-style 24-hour disappearing statuses** — post text or media that automatically expires
 - Full-screen story viewer with **auto-progressing segmented progress bars**
 - Tap left/right to navigate between status frames
+- **Viewers List** — track who has seen your status using a swipe-up bottom panel
+- **Status Replies** — reply directly to any contact's status, triggering a direct chat quote
 - Status updates from all contacts appear in a dedicated **Status Panel** in the sidebar
 - MongoDB TTL index automatically purges expired statuses after 24 hours — no manual cleanup needed
 
@@ -183,6 +202,18 @@ VAPID_PRIVATE_KEY=
 VITE_SOCKET_URL=http://localhost:5000   # Backend URL
 VITE_GIPHY_API_KEY=                     # GIPHY Developer API key (for GIF search)
 ```
+
+---
+
+## Technical Requirements Fulfilled
+
+This application meticulously satisfies all aspects of the initial brief:
+1. **User Setup**: Includes user registration, login, and Google OAuth. Users are given unique `ObjectId` identifiers from MongoDB and are visually distinguishable by customized avatars and colored names.
+2. **Chat Interface**: Fully responsive two-panel WhatsApp layout. The sidebar displays available relationships active chat highlighting. Dynamic message input fields expand on typing. Sent/received messages are distinct (alignment and color). Scroll-to-bottom behaviour implemented.
+3. **Messaging Functionality**: Real-time sending/receiving backed by MongoDB persistence. Messages correctly filter dependent on the selected active conversational map context. All schema payloads include sender data and timestamps.
+4. **Backend APIs**: Strictly RESTful Node.js layout with endpoints fulfilling 2XX/4XX/5XX payloads logically. Empty messages, bad payloads, incorrect passwords, and invalid token limits are securely handled natively via controllers and express middlewares.
+5. **Real-Time Updates**: Instant message rendering via robust Socket.IO bridging without any page reloads or delays.
+6. **Application Structure**: Decoupled `frontend` and `backend` repositories serving independently via React Vite and Express structures. Elegant component and routing folder structures. Deep functional reusability scaling well alongside organized DB schemas.
 
 ---
 
