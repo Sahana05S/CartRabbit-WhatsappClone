@@ -1,5 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+// Note: wipeE2EE is intentionally NOT called on logout.
+// The ECDH private key is non-extractable (browser-enforced) and safe to
+// persist in IndexedDB across sessions. Wiping it would make all previously
+// encrypted messages permanently unreadable. Wipe only on explicit
+// "Reset Encryption" user action (device transfer, security incident).
 import { wipeE2EE } from '../services/e2ee/keyService';
 
 const AuthContext = createContext(null);
@@ -50,13 +55,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // Wipe E2EE key material from IndexedDB before clearing session.
-    // After this, old encrypted messages stored on the server cannot be
-    // decrypted from this device (accepted v1 constraint — no key backup).
-    try { await wipeE2EE(); } catch { /* best-effort */ }
+    // Do NOT wipe E2EE keys here. The private key is non-extractable and
+    // persisting it lets the user read their encrypted message history after
+    // re-login. Call resetE2EEKeys() only for explicit key-rotation scenarios.
     localStorage.removeItem('nextalk_token');
     localStorage.removeItem('nextalk_user');
     setCurrentUser(null);
+  };
+
+  // Explicit key reset — only call this when the user intentionally wants to
+  // rotate their identity key (e.g. "Reset Encryption" in settings).
+  // WARNING: after this, ALL previously encrypted messages become unreadable.
+  const resetE2EEKeys = async () => {
+    try { await wipeE2EE(); } catch { /* best-effort */ }
   };
 
   const updateUser = (userData) => {
@@ -65,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, updateUser, resetE2EEKeys, loading }}>
       {children}
     </AuthContext.Provider>
   );
