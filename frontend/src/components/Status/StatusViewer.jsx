@@ -282,7 +282,7 @@ const StatusViewer = ({ group, onClose, onDelete }) => {
             className="absolute bottom-0 left-0 right-0 bg-bg-secondary rounded-t-3xl shadow-2xl overflow-hidden z-30 max-h-[60vh] max-w-lg mx-auto border-t border-border"
           >
             <div className="sticky top-0 bg-bg-secondary p-4 border-b border-border flex items-center justify-between z-10">
-              <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              <h3 className="text-text-primary font-bold text-lg flex items-center gap-2">
                 <Eye className="w-5 h-5" /> Viewed by {currentStatus.viewers?.length || 0}
               </h3>
               <button 
@@ -290,7 +290,7 @@ const StatusViewer = ({ group, onClose, onDelete }) => {
                   setShowViewers(false);
                   setIsPaused(false);
                 }} 
-                className="p-2 text-text-muted hover:text-white transition-colors"
+                className="p-2 text-text-muted hover:text-text-primary transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
