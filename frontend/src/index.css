@@ -112,7 +112,7 @@
   
   --bubble-in: #ffffff;
   --bubble-out: #d9fdd3;
-  --chat-bg-image: url('https://chat.whatsapp.com/bg-chat-tile-light_04fcacde539c58cca6745483d4858c52.png');
+  --chat-bg-image: url('/doodle-light.jpg');
 }
 
 .dark, [data-theme="dark"] {
@@ -137,7 +137,7 @@
   
   --bubble-in: #202c33;
   --bubble-out: #005c4b;
-  --chat-bg-image: url('https://chat.whatsapp.com/bg-chat-tile-dark_a4be512e7195b6b733d9110b408f075d.png');
+  --chat-bg-image: url('/doodle-dark.jpg');
 }
 
 /* Custom transitions for Framer Motion or simple CSS */
