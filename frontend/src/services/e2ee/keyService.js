@@ -15,10 +15,9 @@ import { saveKeyPair, loadKeyPair, wipeKeys } from './keyStore';
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 /**
- * Called on every login.
- * If a key pair already exists in IndexedDB, it re-uploads the public key to
- * the server (handles cases where the server DB was wiped).
- * If no key pair exists, generates a new one and uploads it.
+ * Called on every login and app mount.
+ * Checks if local keys match the server. If server keys are missing or mismatch,
+ * we re-upload to ensure other users can encrypt for us.
  *
  * @returns {Promise<CryptoKeyPair>}
  */
@@ -26,14 +25,32 @@ export async function initE2EE() {
   let keyPair = await loadKeyPair();
 
   if (!keyPair) {
-    // First-time setup on this device
+    // Generate new if none exists
     keyPair = await generateIdentityKeyPair();
     keyPair.sessionSalt = generateSessionSalt();
     await saveKeyPair(keyPair);
   }
 
-  // Always (re)upload the public key in case the server lost it
-  await uploadPublicKey(keyPair.publicKey, keyPair.sessionSalt);
+  try {
+    // Check if server already has our public key
+    const { data } = await api.get('/keys/me');
+    const localPublicB64 = await exportPublicKey(keyPair.publicKey);
+
+    // If server has it AND it matches what we have locally, we're good.
+    if (data.success && data.bundle?.identityKey === localPublicB64) {
+      return keyPair;
+    }
+
+    // Otherwise, (re)upload to sync
+    await uploadPublicKey(keyPair.publicKey, keyPair.sessionSalt);
+  } catch (err) {
+    if (err.response?.status === 404) {
+      // Server doesn't have it at all (e.g. DB reset) -> Upload
+      await uploadPublicKey(keyPair.publicKey, keyPair.sessionSalt);
+    } else {
+      console.warn('[E2EE] Sync check failed:', err.message);
+    }
+  }
 
   return keyPair;
 }

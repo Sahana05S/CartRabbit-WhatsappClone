@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema(
     },
     pinnedChats:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     archivedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    contacts:      [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     pushSubscriptions: [{
       endpoint: { type: String, required: true },
       keys: {

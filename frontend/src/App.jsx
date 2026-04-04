@@ -7,6 +7,7 @@ import { registerServiceWorker } from './utils/notifications';
 import LandingPage from './pages/LandingPage';
 import OAuthSuccessPage from './pages/OAuthSuccessPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import InvitePage from './pages/InvitePage';
 
 const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -49,6 +50,7 @@ export default function App() {
       />
       <Route path="/auth/google/success" element={<OAuthSuccessPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <Route path="/invite/:username" element={<InvitePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

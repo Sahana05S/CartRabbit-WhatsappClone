@@ -1,16 +1,17 @@
 const User = require('../models/User');
 const Message = require('../models/Message');
 
-// GET /api/users — all users except the logged-in user
+// GET /api/users — all contacts of the logged-in user
 const getAllUsers = async (req, res) => {
   try {
     const currentUserId = req.user._id;
     
-    const currentUserDoc = await User.findById(currentUserId).select('pinnedChats archivedChats');
+    const currentUserDoc = await User.findById(currentUserId).select('pinnedChats archivedChats contacts');
     const pinnedSet = new Set((currentUserDoc.pinnedChats || []).map(id => id.toString()));
     const archivedSet = new Set((currentUserDoc.archivedChats || []).map(id => id.toString()));
+    const contactsArray = currentUserDoc.contacts || [];
 
-    let users = await User.find({ _id: { $ne: currentUserId } })
+    let users = await User.find({ _id: { $in: contactsArray } })
       .select('-password')
       .lean();
 
@@ -196,6 +197,55 @@ const uploadWallpaper = async (req, res) => {
   }
 };
 
+// POST /api/users/add
+const addContact = async (req, res) => {
+  try {
+    const { identifier } = req.body; // email or username
+    const currentUserId = req.user._id;
+
+    if (!identifier) {
+      return res.status(400).json({ success: false, message: 'Please provide an email or username.' });
+    }
+
+    const peer = await User.findOne({
+      $or: [{ email: identifier.toLowerCase() }, { username: identifier }],
+    });
+
+    if (!peer) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (peer._id.toString() === currentUserId.toString()) {
+      return res.status(400).json({ success: false, message: 'You cannot add yourself.' });
+    }
+
+    const currentUser = await User.findById(currentUserId);
+    
+    const alreadyAdded = currentUser.contacts.some(id => id.toString() === peer._id.toString());
+    if (alreadyAdded) {
+      return res.status(400).json({ success: false, message: 'User is already in your contacts.' });
+    }
+
+    // Mutual add
+    currentUser.contacts.push(peer._id);
+    await currentUser.save();
+
+    const peerUser = await User.findById(peer._id);
+    if (!peerUser.contacts.some(id => id.toString() === currentUserId.toString())) {
+      peerUser.contacts.push(currentUserId);
+      await peerUser.save();
+    }
+
+    // Return the newly added user formatted properly without password
+    const addedUser = await User.findById(peer._id).select('-password').lean();
+
+    res.status(200).json({ success: true, message: 'Contact added successfully.', user: addedUser });
+  } catch (error) {
+    console.error('Add contact error:', error);
+    res.status(500).json({ success: false, message: 'Failed to add contact.' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -205,5 +255,6 @@ module.exports = {
   updateAvatar,
   uploadWallpaper,
   togglePinChat,
-  toggleArchiveChat
+  toggleArchiveChat,
+  addContact
 };

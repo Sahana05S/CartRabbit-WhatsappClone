@@ -10,7 +10,10 @@ import {
   User,
   ShieldCheck,
   Mail,
-  Info
+  Info,
+  Link as LinkIcon,
+  Copy,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getInitials } from '../../utils/formatTime';
@@ -23,6 +26,7 @@ const ProfilePanel = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [tempName, setTempName] = useState(currentUser?.displayName || currentUser?.username || '');
   const [tempBio, setTempBio] = useState(currentUser?.bio || '');
+  const [copied, setCopied] = useState(false);
   
   const fileInputRef = useRef(null);
   const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -48,6 +52,13 @@ const ProfilePanel = ({ onClose }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyLink = () => {
+    const inviteLink = `${window.location.origin}/invite/${currentUser?.username}`;
+    navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleAvatarSelect = async (e) => {
@@ -217,6 +228,34 @@ const ProfilePanel = ({ onClose }) => {
                 <span className="text-sm text-text-primary truncate max-w-[200px]">{currentUser?.email}</span>
               </div>
               <span className="bg-accent/20 text-accent text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-tighter">Verified</span>
+            </div>
+          </div>
+
+          {/* Invite Link Section */}
+          <div className="bg-gradient-to-br from-accent/10 to-primary/5 rounded-2xl p-5 border border-accent/20 shadow-lg relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-[80px] blur-xl group-hover:scale-150 transition-transform duration-700" />
+            
+            <label className="text-[13px] text-accent font-black uppercase tracking-[0.2em] block mb-4 flex items-center gap-2">
+              <LinkIcon className="w-4 h-4" /> Share My NexTalk Link
+            </label>
+            
+            <div className="flex flex-col gap-3">
+              <div className="bg-bg-panel/50 backdrop-blur-sm border border-border rounded-xl p-3 flex items-center justify-between gap-3 group/link">
+                <span className="text-xs text-text-secondary truncate font-medium">
+                  {window.location.origin}/invite/{currentUser?.username}
+                </span>
+                <button 
+                  onClick={handleCopyLink}
+                  className={`shrink-0 p-2 rounded-lg transition-all ${
+                    copied ? 'bg-green-500 text-white' : 'bg-accent/10 text-accent hover:bg-accent hover:text-white'
+                  }`}
+                >
+                  {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest pl-1">
+                Anyone with this link can connect with you instantly.
+              </p>
             </div>
           </div>
         </div>

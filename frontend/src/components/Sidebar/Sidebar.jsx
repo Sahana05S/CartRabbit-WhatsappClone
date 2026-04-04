@@ -7,13 +7,15 @@ import ChatList from './ChatList';
 import CreateGroupModal from './CreateGroupModal';
 import ProfilePanel from './ProfilePanel';
 import SettingsPanel from './SettingsPanel';
-import { Settings } from 'lucide-react';
+import AddContactModal from '../Modals/AddContactModal';
+import { Settings, UserPlus } from 'lucide-react';
 
 export default function Sidebar({ selectedUser, onSelectUser }) {
   const { currentUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [search, setSearch] = useState('');
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
   const [showProfile,    setShowProfile]    = useState(false);
   const [showSettings,   setShowSettings]   = useState(false);
 
@@ -55,6 +57,14 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
         </button>
 
         <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => setShowAddContact(true)}
+            title="Add Contact"
+            className="p-2 text-text-muted hover:text-accent-light hover:bg-bg-hover rounded-lg transition-all duration-200 flex-shrink-0"
+          >
+            <UserPlus className="w-4 h-4" />
+          </button>
+
           <button
             onClick={() => setShowGroupModal(true)}
             title="New Group"
@@ -121,6 +131,16 @@ export default function Sidebar({ selectedUser, onSelectUser }) {
           onGroupCreated={(group) => {
             setShowGroupModal(false);
             onSelectUser(group); // Open the new group right away
+          }}
+        />
+      )}
+
+      {showAddContact && (
+        <AddContactModal
+          onClose={() => setShowAddContact(false)}
+          onContactAdded={(user) => {
+            setShowAddContact(false);
+            onSelectUser(user); // Open chat with the new contact immediately
           }}
         />
       )}
