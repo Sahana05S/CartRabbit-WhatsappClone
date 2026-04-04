@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { SocketProvider } from './context/SocketContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { E2EEProvider } from './context/E2EEContext.jsx';
+import { CallProvider } from './context/CallContext.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -14,9 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <E2EEProvider>
           <SocketProvider>
-            <ThemeProvider>
-              <App />
-            </ThemeProvider>
+            <CallProvider>
+              <ThemeProvider>
+                <App />
+              </ThemeProvider>
+            </CallProvider>
           </SocketProvider>
         </E2EEProvider>
       </AuthProvider>

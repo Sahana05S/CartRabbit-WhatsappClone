@@ -24,6 +24,7 @@ import {
 import { useMessages } from '../../hooks/useMessages';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
+import { useCall } from '../../context/CallContext';
 import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -43,6 +44,8 @@ const MainChat = ({ selectedChat, onBack }) => {
   const [showStarred, setShowStarred] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const messageListRef = useRef(null);
+  
+  const { initiateCall } = useCall();
 
   const search = useSearch(messages);
 
@@ -169,6 +172,11 @@ const MainChat = ({ selectedChat, onBack }) => {
         </div>
 
         <div className="flex items-center gap-1">
+          {!selectedChat?.isGroup && (
+            <button className="btn-ghost" onClick={() => initiateCall(selectedChat)} title="Audio Call">
+              <Phone className="w-5 h-5" />
+            </button>
+          )}
           <button className={`btn-ghost ${search.isOpen ? 'bg-primary/20 text-primary' : ''}`} onClick={search.openSearch}>
             <Search className="w-5 h-5" />
           </button>

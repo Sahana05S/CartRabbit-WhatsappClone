@@ -8,6 +8,7 @@ import NewChatPanel from '../components/Sidebar/NewChatPanel';
 import StarredMessagesPanel from '../components/Chat/StarredMessagesPanel';
 import StatusPanel from '../components/Sidebar/StatusPanel';
 import StatusViewer from '../components/Status/StatusViewer';
+import CallOverlay from '../components/Call/CallOverlay';
 import NetworkStatus from '../components/ui/NetworkStatus';
 import PushPermissionPrompt from '../components/ui/PushPermissionPrompt';
 import { useUsers } from '../hooks/useUsers';
@@ -26,6 +27,7 @@ const ChatPage = () => {
     <div className="flex h-screen w-full bg-bg-secondary text-text-primary overflow-hidden relative">
       <NetworkStatus />
       <PushPermissionPrompt />
+      <CallOverlay />
       
       {/* Sidebar (Left Pane) */}
       <div className={`w-full md:w-[320px] lg:w-[400px] flex flex-col relative overflow-hidden z-10 border-r border-glass-border/30 ${selectedChat ? 'hidden md:flex' : 'flex'}`}>

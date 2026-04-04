@@ -102,6 +102,32 @@ const initSocket = (io) => {
       }
     });
 
+    // --- WebRTC Audio Calling Signaling ---
+    socket.on('callUser', ({ userToCall, signalData, callerInfo }) => {
+      socket.to(userToCall).emit('incomingCall', { 
+        signal: signalData, 
+        from: socket.user._id.toString(),
+        callerInfo 
+      });
+    });
+
+    socket.on('answerCall', ({ to, signal }) => {
+      socket.to(to).emit('callAccepted', { signal });
+    });
+
+    socket.on('rejectCall', ({ to }) => {
+      socket.to(to).emit('callRejected');
+    });
+
+    socket.on('iceCandidate', ({ to, candidate }) => {
+      socket.to(to).emit('iceCandidate', { candidate });
+    });
+
+    socket.on('endCall', ({ to }) => {
+      socket.to(to).emit('callEnded');
+    });
+    // ----------------------------------------
+
     socket.on('disconnect', () => {
       // Remove this specific socketId from the user's tracked connections
       const userSockets = onlineUsers.get(userId);
