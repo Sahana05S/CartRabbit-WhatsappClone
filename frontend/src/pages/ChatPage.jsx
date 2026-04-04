@@ -6,13 +6,16 @@ import ProfilePanel from '../components/Sidebar/ProfilePanel';
 import SettingsPanel from '../components/Sidebar/SettingsPanel';
 import NewChatPanel from '../components/Sidebar/NewChatPanel';
 import StarredMessagesPanel from '../components/Chat/StarredMessagesPanel';
+import StatusPanel from '../components/Sidebar/StatusPanel';
+import StatusViewer from '../components/Status/StatusViewer';
 import NetworkStatus from '../components/ui/NetworkStatus';
 import PushPermissionPrompt from '../components/ui/PushPermissionPrompt';
 import { useUsers } from '../hooks/useUsers';
 
 const ChatPage = () => {
   const [selectedChatId, setSelectedChatId] = useState(null);
-  const [activePanel, setActivePanel] = useState(null); // null, 'profile', 'settings', 'new-chat'
+  const [activePanel, setActivePanel] = useState(null); // null, 'profile', 'settings', 'new-chat', 'starred', 'status'
+  const [viewerGroup, setViewerGroup] = useState(null);
   
   const { users, loading, error, togglePinChat, toggleArchiveChat } = useUsers(selectedChatId);
   
@@ -37,6 +40,7 @@ const ChatPage = () => {
           onOpenSettings={() => setActivePanel('settings')}
           onOpenNewChat={() => setActivePanel('new-chat')}
           onOpenStarred={() => setActivePanel('starred')}
+          onOpenStatus={() => setActivePanel('status')}
         />
 
         {/* Sliding Sidebar Panels */}
@@ -67,6 +71,13 @@ const ChatPage = () => {
               }}
             />
           )}
+          {activePanel === 'status' && (
+            <StatusPanel 
+              key="status"
+              onClose={() => setActivePanel(null)}
+              onOpenViewer={(group) => setViewerGroup(group)}
+            />
+          )}
         </AnimatePresence>
       </div>
 
@@ -77,6 +88,14 @@ const ChatPage = () => {
           onBack={() => setSelectedChatId(null)} 
         />
       </div>
+      <AnimatePresence>
+        {viewerGroup && (
+          <StatusViewer 
+            group={viewerGroup}
+            onClose={() => setViewerGroup(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

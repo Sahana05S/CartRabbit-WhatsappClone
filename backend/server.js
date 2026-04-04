@@ -13,6 +13,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const keyRoutes = require('./routes/keyRoutes');
+const statusRoutes = require('./routes/statusRoutes');
 const { initSocket } = require('./socket/socketHandler');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/keys', keyRoutes);
+app.use('/api/status', statusRoutes);
 
 // Health check
 app.get('/api/health', (req, res) =>

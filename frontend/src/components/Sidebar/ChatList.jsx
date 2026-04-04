@@ -14,7 +14,8 @@ import {
   Settings as SettingsIcon,
   Star,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  CircleDashed
 } from 'lucide-react';
 import { useUsers } from '../../hooks/useUsers';
 import { useSocket } from '../../context/SocketContext';
@@ -31,7 +32,8 @@ const ChatList = ({
   onOpenProfile, 
   onOpenSettings, 
   onOpenNewChat,
-  onOpenStarred
+  onOpenStarred,
+  onOpenStatus
 }) => {
   const { currentUser, logout } = useAuth();
   const { onlineUsers } = useSocket();
@@ -93,6 +95,9 @@ const ChatList = ({
         </div>
 
         <div className="flex items-center gap-1">
+          <button className="btn-ghost" onClick={onOpenStatus} title="Status Updates">
+            <CircleDashed className="w-5 h-5" />
+          </button>
           <button className="btn-ghost" onClick={onOpenNewChat} title="New Chat">
             <MessageSquarePlus className="w-5 h-5" />
           </button>
