@@ -17,6 +17,10 @@ const groupSchema = new mongoose.Schema(
       maxlength: [200, 'Description cannot exceed 200 characters'],
       default: '',
     },
+    avatarUrl: {
+      type: String,
+      default: null,
+    },
     avatarColor: {
       type: String,
       default: function () {

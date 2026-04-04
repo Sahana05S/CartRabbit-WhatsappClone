@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Loader2, ArrowRight, StarOff, Star } from 'lucide-react';
+import { X, Loader2, ArrowRight, StarOff, Star, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 import api from '../../api/axios';
 import { formatPreviewTime } from '../../utils/formatTime';
 import HighlightText from './HighlightText';
@@ -7,7 +8,7 @@ import EmptyState from '../ui/EmptyState';
 import LoadingState from '../ui/LoadingState';
 import ErrorState from '../ui/ErrorState';
 
-export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessage, onUnstarMessage }) {
+export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessage, onUnstarMessage, isGlobal }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,7 +17,8 @@ export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessag
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get(`/messages/starred?chatId=${chatId}`);
+      const endpoint = chatId ? `/messages/starred?chatId=${chatId}` : '/messages/starred';
+      const res = await api.get(endpoint);
       if (mounted) {
         setMessages(res.data.messages || []);
       }
@@ -50,18 +52,27 @@ export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessag
     }
   };
 
-  return (
-    <div className="w-[320px] sm:w-[350px] flex flex-col bg-bg-panel border-l border-white/[0.06] h-full flex-shrink-0 animate-slide-left">
+  const content = (
+    <>
       {/* Header */}
-      <div className="h-[72px] flex items-center justify-between px-4 border-b border-white/[0.06] flex-shrink-0">
-        <h2 className="text-text-primary font-semibold">Starred Messages</h2>
-        <button
-          onClick={onClose}
-          className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
+      {!isGlobal ? (
+        <div className="h-[72px] flex items-center justify-between px-4 border-b border-white/[0.06] flex-shrink-0">
+          <h2 className="text-text-primary font-semibold">Starred Messages</h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-text-muted hover:text-text-primary hover:bg-white/5 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      ) : (
+        <header className="h-[108px] bg-bg-secondary flex items-end px-6 pb-5 gap-6 border-b border-border flex-shrink-0">
+          <button onClick={onClose} className="btn-ghost -ml-2 mb-0.5">
+            <ArrowLeft className="w-6 h-6 text-text-primary" />
+          </button>
+          <h2 className="text-[19px] font-bold text-text-primary tracking-tight">Starred Messages</h2>
+        </header>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-3">
@@ -136,6 +147,26 @@ export default function StarredMessagesPanel({ chatId, onClose, onScrollToMessag
           })
         )}
       </div>
+    </>
+  );
+
+  if (isGlobal) {
+    return (
+      <motion.div 
+        initial={{ x: '-100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '-100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="sidebar-panel border-r border-border bg-bg-primary"
+      >
+        {content}
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="w-[320px] sm:w-[350px] flex flex-col bg-bg-panel border-l border-white/[0.06] h-full flex-shrink-0 animate-slide-left">
+      {content}
     </div>
   );
 }

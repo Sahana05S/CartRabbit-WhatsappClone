@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Group = require('../models/Group');
+const Message = require('../models/Message');
 
 // Track online users: Map<userId, Set<socketId>>
 const onlineUsers = new Map();
@@ -31,7 +33,7 @@ const initSocket = (io) => {
     socket.join(userId);
 
     // Join all group rooms the user belongs to
-    require('../models/Group').find({ members: userId }).select('_id')
+    Group.find({ members: userId }).select('_id')
       .then(groups => {
         groups.forEach(g => socket.join(g._id.toString()));
       })
@@ -65,7 +67,7 @@ const initSocket = (io) => {
 
     socket.on('messageDelivered', async (messageId) => {
       try {
-        const message = await require('../models/Message').findByIdAndUpdate(
+        const message = await Message.findByIdAndUpdate(
           messageId,
           { status: 'delivered' },
           { new: true }
@@ -112,7 +114,7 @@ const initSocket = (io) => {
           
           // Update last seen in DB and emit to clients
           const now = new Date();
-          require('../models/User').findByIdAndUpdate(userId, { lastSeen: now }).catch(console.error);
+          User.findByIdAndUpdate(userId, { lastSeen: now }).catch(console.error);
           io.emit('userOffline', { userId, lastSeen: now });
         }
       }

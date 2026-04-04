@@ -61,6 +61,18 @@ export const formatLastSeen = (dateString) => {
     return `on ${dateLabel} at ${timeStr}`;
   }
 };
+
+/**
+ * Format a timestamp for detailed info (e.g. "12 Mar 2024, 09:41 PM")
+ */
+export const formatFullDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const dateOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+  const timeOptions = { hour: '2-digit', minute: '2-digit' };
+  return `${date.toLocaleDateString([], dateOptions)}, ${date.toLocaleTimeString([], timeOptions)}`;
+};
+
 /**
  * Format seconds into mm:ss
  */

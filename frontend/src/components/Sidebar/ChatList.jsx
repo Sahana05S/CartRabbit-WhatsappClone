@@ -21,9 +21,19 @@ import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
 import { getInitials } from '../../utils/formatTime';
 
-const ChatList = ({ onSelectChat, activeChatId, onOpenProfile, onOpenSettings, onOpenNewChat }) => {
+const ChatList = ({ 
+  users = [], 
+  loading = false,
+  activeChatId, 
+  onSelectChat, 
+  togglePinChat,
+  toggleArchiveChat,
+  onOpenProfile, 
+  onOpenSettings, 
+  onOpenNewChat,
+  onOpenStarred
+}) => {
   const { currentUser, logout } = useAuth();
-  const { users, loading, error, togglePinChat, toggleArchiveChat } = useUsers(activeChatId);
   const { onlineUsers } = useSocket();
   const [searchQuery, setSearchQuery] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -116,7 +126,7 @@ const ChatList = ({ onSelectChat, activeChatId, onOpenProfile, onOpenSettings, o
                     >
                       <Archive className="w-4 h-4" /> {showArchived ? 'All Chats' : 'Archived'}
                     </button>
-                    <button className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
+                    <button onClick={() => {onOpenStarred?.(); setShowMenu(false);}} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
                       <Star className="w-4 h-4" /> Starred Messages
                     </button>
                     <div className="border-t border-border my-1" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -25,6 +25,9 @@ const NewChatPanel = ({ onClose, onSelectContact }) => {
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [groupInfo, setGroupInfo] = useState({ name: '', description: '' });
   const [isGroupMode, setIsGroupMode] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
@@ -42,6 +45,15 @@ const NewChatPanel = ({ onClose, onSelectContact }) => {
     };
     fetchAllUsers();
   }, []);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
 
   const resolveAvatar = (url) => {
     if (!url) return null;
@@ -65,10 +77,14 @@ const NewChatPanel = ({ onClose, onSelectContact }) => {
     if (!groupInfo.name) return;
     try {
       setLoading(true);
-      const { data } = await api.post('/groups', {
-        name: groupInfo.name,
-        description: groupInfo.description,
-        members: selectedParticipants.map(p => p._id)
+      const formData = new FormData();
+      formData.append('name', groupInfo.name);
+      formData.append('description', groupInfo.description);
+      formData.append('members', JSON.stringify(selectedParticipants.map(p => p._id)));
+      if (avatarFile) formData.append('avatar', avatarFile);
+
+      const { data } = await api.post('/groups', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       onSelectContact(data.group);
       onClose();
@@ -245,9 +261,30 @@ const NewChatPanel = ({ onClose, onSelectContact }) => {
           <div className="p-8 flex flex-col gap-8 animate-fade-in">
             {/* Avatar Selection Placeholder */}
             <div className="flex flex-col items-center gap-4">
-              <div className="w-32 h-32 rounded-full bg-bg-panel border-4 border-border flex flex-col items-center justify-center text-text-muted hover:text-accent hover:border-accent transition-all cursor-pointer group shadow-xl">
-                <Camera className="w-10 h-10 group-hover:scale-110 transition-transform" />
-                <span className="text-[10px] font-bold uppercase tracking-widest mt-2">Add Photo</span>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarChange} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-32 h-32 rounded-full bg-bg-panel border-4 border-border flex flex-col items-center justify-center text-text-muted hover:text-accent hover:border-accent transition-all cursor-pointer group shadow-xl relative overflow-hidden"
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Group Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <Camera className="w-10 h-10 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest mt-2">Add Photo</span>
+                  </>
+                )}
+                {avatarPreview && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                )}
               </div>
             </div>
 

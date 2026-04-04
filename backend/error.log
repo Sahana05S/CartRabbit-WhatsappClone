@@ -1,0 +1,65 @@
+﻿node : D:\Whatsapp Clone\b
+ackend\node_modules\passpo
+rt-oauth2\lib\strategy.js:
+87
+At line:1 char:1
++ node server.js 2>&1 | 
+Out-File -Encoding utf8 
+-FilePath error.log
++ ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (D  
+  :\Whatsapp Clo...\str   
+ ategy.js:87:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  if (!options.clientID) 
+{ throw new 
+TypeError('OAuth2Strategy 
+requires a clientID 
+option'); }
+                          
+ ^
+
+TypeError: OAuth2Strategy 
+requires a clientID option
+    at 
+Strategy.OAuth2Strategy 
+(D:\Whatsapp Clone\backend
+\node_modules\passport-oau
+th2\lib\strategy.js:87:34)
+    at new Strategy 
+(D:\Whatsapp Clone\backend
+\node_modules\passport-goo
+gle-oauth20\lib\strategy.j
+s:52:18)
+    at Object.<anonymous> 
+(D:\Whatsapp Clone\backend
+\config\passport.js:20:3)
+    at Module._compile (no
+de:internal/modules/cjs/lo
+ader:1730:14)
+    at Object..js (node:in
+ternal/modules/cjs/loader:
+1895:10)
+    at Module.load (node:i
+nternal/modules/cjs/loader
+:1465:32)
+    at Function._load (nod
+e:internal/modules/cjs/loa
+der:1282:12)
+    at 
+TracingChannel.traceSync (
+node:diagnostics_channel:3
+22:14)
+    at wrapModuleLoad (nod
+e:internal/modules/cjs/loa
+der:235:24)
+    at Module.require (nod
+e:internal/modules/cjs/loa
+der:1487:12)
+
+Node.js v22.17.0

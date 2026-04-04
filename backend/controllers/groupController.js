@@ -5,11 +5,20 @@ const { getIO } = require('../socket/socketHandler');
 // POST /api/groups - Create a group
 const createGroup = async (req, res) => {
   try {
-    const { name, description, members } = req.body;
+    let { name, description, members } = req.body;
     const userId = req.user._id;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Group name is required' });
+    }
+
+    // Handle members array if it's sent as a JSON string from a FormData object
+    if (typeof members === 'string') {
+      try {
+        members = JSON.parse(members);
+      } catch (e) {
+        members = [];
+      }
     }
 
     // Ensure creator is in the members array and uniquely parsed
@@ -22,27 +31,33 @@ const createGroup = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Group must have at least 2 members' });
     }
 
-    const group = await Group.create({
+    const groupData = {
       name,
       description: description || '',
       members: memberArray,
       admins: [userId],
       createdBy: userId,
-    });
+    };
+
+    if (req.file) {
+      groupData.avatarUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const group = await Group.create(groupData);
 
     const populatedGroup = await Group.findById(group._id)
-      .populate('members', 'username avatarColor')
-      .populate('admins', 'username avatarColor')
-      .populate('createdBy', 'username avatarColor');
+      .populate('members', 'username avatarUrl avatarColor')
+      .populate('admins', 'username avatarUrl avatarColor')
+      .populate('createdBy', 'username avatarUrl avatarColor');
 
     // Notify all members that a group was created so they can join the room client-side
     // or just emit 'groupCreated' to their personal rooms
     const io = getIO();
     memberArray.forEach((memberId) => {
-      io.to(memberId).emit('groupCreated', populatedGroup);
+      io.to(memberId).emit('groupCreated', { ...populatedGroup._doc, isGroup: true, username: populatedGroup.name });
     });
 
-    res.status(201).json({ success: true, group: populatedGroup });
+    res.status(201).json({ success: true, group: { ...populatedGroup._doc, isGroup: true, username: populatedGroup.name } });
   } catch (err) {
     console.error('Create group error:', err);
     res.status(500).json({ success: false, message: 'Failed to create group.' });

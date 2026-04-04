@@ -18,12 +18,13 @@ import {
   Trash2,
   Reply,
   Info,
-  CheckCheck
+  CheckCheck,
+  Images
 } from 'lucide-react';
 import { useMessages } from '../../hooks/useMessages';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
-import { getInitials } from '../../utils/formatTime';
+import { getInitials, formatLastSeen } from '../../utils/formatTime';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ReplyPreview from './ReplyPreview';
@@ -34,7 +35,7 @@ import { useSearch } from '../../hooks/useSearch';
 
 const MainChat = ({ selectedChat, onBack }) => {
   const { currentUser } = useAuth();
-  const { socket } = useSocket();
+  const { socket, onlineUsers } = useSocket();
   const { messages, loading, error, addMessage, removeMessageLocally, updateMessageStar } = useMessages(selectedChat);
   const [isTyping, setIsTyping] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
@@ -159,7 +160,10 @@ const MainChat = ({ selectedChat, onBack }) => {
           <div className="min-w-0 cursor-pointer" onClick={() => setShowGallery(true)}>
             <h3 className="text-[16px] font-semibold text-text-primary truncate">{selectedChat.displayName || selectedChat.username || selectedChat.name}</h3>
             <p className="text-[12px] text-text-muted truncate">
-              {isTyping || (selectedChat.isGroup ? `${selectedChat.members?.length || 0} members` : (selectedChat.bio || 'Click for contact info'))}
+              {isTyping || (selectedChat.isGroup 
+                ? `${selectedChat.members?.length || 0} members` 
+                : (onlineUsers?.includes(selectedChat._id) ? 'online' : (selectedChat.lastSeen ? `last seen ${formatLastSeen(selectedChat.lastSeen)}` : (selectedChat.bio || 'Click for contact info')))
+              )}
             </p>
           </div>
         </div>
@@ -182,8 +186,11 @@ const MainChat = ({ selectedChat, onBack }) => {
                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                     className="absolute right-0 mt-2 w-48 bg-bg-panel border border-border rounded-xl py-2 z-[101] shadow-2xl text-text-primary"
                   >
-                    <button onClick={() => {setShowGallery(true); setShowMenu(false);}} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
+                    <button onClick={() => {setShowMenu(false);}} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
                       <Info className="w-4 h-4" /> Contact Info
+                    </button>
+                    <button onClick={() => {setShowGallery(true); setShowMenu(false);}} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
+                      <Images className="w-4 h-4" /> Media, Links, and Docs
                     </button>
                     <button onClick={() => {setShowStarred(true); setShowMenu(false);}} className="w-full text-left px-4 py-2 hover:bg-bg-hover text-sm flex items-center gap-3">
                       <Star className="w-4 h-4" /> Starred Messages

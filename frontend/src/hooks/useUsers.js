@@ -43,7 +43,7 @@ export const useUsers = (selectedUserId) => {
         const dateA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
         const dateB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
         if (dateA !== dateB) return dateB - dateA;
-        return a.username.localeCompare(b.username);
+        return (a.username || a.name || '').localeCompare(b.username || b.name || '');
       });
 
       setUsers(allChats);
