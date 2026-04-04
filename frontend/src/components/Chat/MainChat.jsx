@@ -289,7 +289,7 @@ const MainChat = ({ selectedChat, onBack }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute inset-0 z-40 bg-bg-secondary flex flex-col w-full md:w-[400px] right-0 shadow-2xl border-l border-border"
+            className="absolute top-0 bottom-0 right-0 z-40 bg-bg-secondary flex flex-col w-full md:w-[400px] shadow-2xl border-l border-border"
           >
             <MediaGalleryPanel 
               chatId={selectedChat._id}
@@ -307,7 +307,7 @@ const MainChat = ({ selectedChat, onBack }) => {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute inset-0 z-40 bg-bg-secondary flex flex-col w-full md:w-[400px] right-0 shadow-2xl border-l border-border"
+            className="absolute top-0 bottom-0 right-0 z-40 bg-bg-secondary flex flex-col w-full md:w-[400px] shadow-2xl border-l border-border"
           >
             <StarredMessagesPanel 
               chatId={selectedChat._id}
