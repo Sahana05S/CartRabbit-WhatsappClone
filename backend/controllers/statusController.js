@@ -51,7 +51,8 @@ const getStatuses = async (req, res) => {
     // Return all unexpired statuses, since we might want to group by user on the frontend
     const statuses = await Status.find({})
       .sort({ createdAt: 1 }) // Ascending by default for stories
-      .populate('userId', 'username avatarColor avatarUrl displayName');
+      .populate('userId', 'username avatarColor avatarUrl displayName')
+      .populate('viewers', 'username avatarColor avatarUrl displayName');
 
     res.json({ success: true, statuses });
   } catch (error) {
@@ -83,4 +84,37 @@ const deleteStatus = async (req, res) => {
   }
 };
 
-module.exports = { createStatus, getStatuses, deleteStatus };
+const viewStatus = async (req, res) => {
+  try {
+    const { statusId } = req.params;
+    const userId = req.user._id;
+
+    const status = await Status.findById(statusId);
+    if (!status) return res.status(404).json({ success: false, message: 'Status not found' });
+
+    if (status.userId.toString() !== userId.toString()) {
+      if (!status.viewers.includes(userId)) {
+        status.viewers.push(userId);
+        await status.save();
+        
+        getIO().to(status.userId.toString()).emit('statusViewed', {
+          statusId,
+          viewer: {
+            _id: req.user._id,
+            username: req.user.username,
+            displayName: req.user.displayName,
+            avatarUrl: req.user.avatarUrl,
+            avatarColor: req.user.avatarColor,
+          }
+        });
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('View status error:', error);
+    res.status(500).json({ success: false, message: 'Failed to mark status as viewed.' });
+  }
+};
+
+module.exports = { createStatus, getStatuses, deleteStatus, viewStatus };

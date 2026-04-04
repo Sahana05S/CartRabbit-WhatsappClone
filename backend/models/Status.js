@@ -23,6 +23,7 @@ const StatusSchema = new mongoose.Schema({
     type: String, // used if type === 'text'
     default: '#00a884',
   },
+  viewers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdAt: {
     type: Date,
     default: Date.now,
