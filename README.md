@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💬 NexTalk
+# NexTalk
 
 ### A production-grade, real-time chat application inspired by WhatsApp Web
 
@@ -14,7 +14,7 @@
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 <table>
   <tr>
@@ -59,7 +59,7 @@
 
 ---
 
-## 🚀 Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -75,20 +75,20 @@
 
 ---
 
-## ✨ Full Feature List
+## Full Feature List
 
-### 💬 Messaging
+### Messaging
 - **Real-time 1-on-1 messaging** via Socket.IO with instant delivery
 - **Group chat** — create groups, add members, and send messages to multiple participants simultaneously
 - **Reply to specific messages** — quote a message for context, with tap-to-scroll
 - **Message forwarding** — forward any message to another contact or group
-- **Message reactions** — react to any message with emoji (👍 ❤️ 😂 😮 😢 🙏)
+- **Message reactions** — react to any message with emoji
 - **Message starring** — star important messages for quick retrieval later
 - **Copy message** — copy text content to clipboard with a single tap
 - **Delete for me / Delete for everyone** — full WhatsApp-style message deletion controls
 - **Message Info panel** — view detailed metadata: sent time, delivery status, read receipts, encryption info, and chat type
 
-### 📎 Rich Media & Attachments
+### Rich Media & Attachments
 - **Image & video sharing** — send and preview images and videos inline in the chat
 - **File attachments** — support for PDFs, Docx, and other document types with download links
 - **GIF support** — integrated GIPHY search to send animated GIFs
@@ -96,13 +96,13 @@
 - **Voice messages** — record audio directly in the app and send instantly
 - **Emoji picker** — full emoji keyboard for expressive messaging
 
-### 🖼️ Media Gallery
+### Media Gallery
 - Dedicated per-conversation media gallery panel with three tabs: **Images**, **Videos**, and **Files**
 - Lazy loaded thumbnails for performance
 - One-click download for any shared file
 - Accessible from the chat header's three-dot menu
 
-### 📞 Audio Calling
+### Audio Calling
 - **Peer-to-peer WebRTC audio calls** — real browser-native audio, no third-party VoIP service required
 - Incoming call overlay with **Accept / Reject** controls, visible from anywhere in the app
 - Live call overlay showing caller avatar, live **call duration timer**, and a **Mute microphone** toggle
@@ -110,14 +110,14 @@
 - Graceful teardown — ending a call correctly closes the peer connection and stops the microphone stream
 - Available on all 1-on-1 direct message chats (phone icon in chat header)
 
-### 📱 Status / Stories
+### Status / Stories
 - **WhatsApp-style 24-hour disappearing statuses** — post text or media that automatically expires
 - Full-screen story viewer with **auto-progressing segmented progress bars**
 - Tap left/right to navigate between status frames
 - Status updates from all contacts appear in a dedicated **Status Panel** in the sidebar
 - MongoDB TTL index automatically purges expired statuses after 24 hours — no manual cleanup needed
 
-### 🔐 Authentication & Security
+### Authentication & Security
 - **JWT authentication** — secure, stateless sessions with configurable expiry
 - **Password hashing** with bcryptjs (cost factor 12)
 - **Google OAuth** — sign in with your Google account via Passport.js
@@ -126,14 +126,14 @@
 - **Forgot Password flow** — request a time-limited (15-minute) password reset token and set a new password via a dedicated reset page
 - End-to-end encrypted messages with **AES-GCM-256 (E2EE)** for supported conversations
 
-### 👤 Presence & Status
+### Presence & Status
 - **Real-time online/offline indicators** — green dot updates live as contacts connect/disconnect
 - **Last seen** timestamps — shown in the chat header and contact list when a user is offline
-- **Typing indicators** — animated "typing…" text shown in real-time during 1-on-1 and group chats
-- **Read receipts** — WhatsApp-style single ✓ (sent), double ✓✓ (delivered), blue ✓✓ (read)
+- **Typing indicators** — animated "typing..." text shown in real-time during 1-on-1 and group chats
+- **Read receipts** — WhatsApp-style single check (sent), double check (delivered), blue double check (read)
 - **Seen at timestamp** shown inline on the last read message
 
-### 📋 Chat Management
+### Chat Management
 - **Pin chats** — pin up to any number of conversations to the top of the list
 - **Archive chats** — move inactive chats out of the main list into a separate Archived section
 - **Unread message badge** — unread count displayed per conversation
@@ -141,7 +141,7 @@
 - **Global search** — search all messages across all conversations from the sidebar
 - **Starred messages panel** — view all your starred messages globally across every chat, or per-conversation
 
-### 🎨 UI & Customization
+### UI & Customization
 - **Premium glassmorphism design** — frosted glass cards, backdrop blur, translucency effects
 - **Light and dark themes** — full system-level theme toggle that also switches the chat wallpaper
 - **Chat wallpapers** — default doodle wallpaper (light/dark variant) that switches with the theme; customizable per-user with presets, solid colors, or uploaded custom images
@@ -150,19 +150,19 @@
 - **Responsive layout** — adapts gracefully between desktop and mobile viewports
 - Custom scrollbar styling and no-scrollbar utility for clean overflow areas
 
-### 🔔 Notifications
+### Notifications
 - **Web Push Notifications** — browser push notifications for new messages when the tab is in the background
 - **In-app notification system** — toast-style alerts for network status changes and errors
 - Push subscription management per device
 
-### 🔒 End-to-End Encryption (E2EE)
+### End-to-End Encryption (E2EE)
 - Optional per-conversation AES-GCM-256 encryption
 - Keys managed client-side — the server never has access to plaintext
 - E2EE messages show a lock icon in the bubble; the Message Info panel confirms the encryption algorithm version
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 ### Backend (`backend/.env`)
 ```env
@@ -184,7 +184,7 @@ VITE_GIPHY_API_KEY=                     # GIPHY Developer API key (for GIF searc
 
 ---
 
-## 🛠️ Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 - Node.js v18+
@@ -223,18 +223,18 @@ Navigate to **http://localhost:5173** in your browser. Register an account and s
 
 ---
 
-## 🧪 Testing Audio Calls Locally
+## Testing Audio Calls Locally
 
 WebRTC calls require two authenticated users. The easiest way to test locally:
 1. Open the app in **Chrome** (normal window) and log in as User A.
 2. Open the app in **Firefox** (or an Incognito Chrome window) and log in as User B.
 3. Open a direct chat between the two accounts.
-4. Click the **📞 phone icon** in the chat header on User A's side.
+4. Click the phone icon in the chat header on User A's side.
 5. User B will see an incoming call overlay — click **Accept** to connect!
 
 ---
 
-## 🔑 Testing Forgot Password Locally
+## Testing Forgot Password Locally
 
 Since email sending is simulated in development:
 1. Go to `/login` and click **"Forgot Password?"**.
@@ -246,6 +246,6 @@ Since email sending is simulated in development:
 
 <div align="center">
 
-Built with ❤️ using the MERN stack + Socket.IO + WebRTC
+Built by Sahana >w<
 
 </div>
