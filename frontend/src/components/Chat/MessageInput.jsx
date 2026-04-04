@@ -153,7 +153,7 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
 
     } catch (err) {
       console.error('Send error:', err);
-      setUploadError('Failed to send message.');
+      setUploadError(err.response?.data?.message || 'Failed to send message.');
     } finally {
       setSending(false);
     }

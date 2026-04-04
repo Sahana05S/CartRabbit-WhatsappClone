@@ -191,7 +191,7 @@ const MessageBubble = ({
                 <div className="text-[15px] leading-relaxed break-words whitespace-pre-wrap font-medium">
                   {message.isE2EE ? (
                     decryptState === 'pending' ? <span className="italic opacity-50">Decrypting...</span> :
-                    decryptState === 'failed' ? <span className="italic opacity-50 flex items-center gap-1"><Lock className="w-3 h-3" /> Undecipherable</span> :
+                    decryptState === 'failed' ? <span className="italic opacity-50 flex items-center gap-1" title="Private keys are wiped on logout for safety. Old messages are now undecipherable locally."><Lock className="w-3 h-3" /> Undecipherable (keys reset)</span> :
                     <HighlightText text={decryptedText} query={searchQuery} />
                   ) : <HighlightText text={message.text} query={searchQuery} />}
                 </div>
