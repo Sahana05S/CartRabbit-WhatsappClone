@@ -84,7 +84,6 @@
 | **Design** | Glassmorphism, custom CSS variables, doodle wallpapers |
 
 ### Third-Party APIs Used
-- **Browser Geolocation API**: Used to natively request devices' exact GPS coordinates for live location sharing.
 - **WebRTC API**: Used for establishing true peer-to-peer audio connections securely over the network.
 - **Web Push API**: Standardized backend web-push framework handling native push notifications triggered anywhere in the OS.
 - **Giphy API**: For querying and fetching optimized animated GIFs within the message input modal.
@@ -109,7 +108,6 @@
 ### Rich Media & Attachments
 - **Image & video sharing** — send and preview images and videos inline in the chat
 - **File attachments** — support for PDFs, Docx, and other document types with download links
-- **Location sharing** — share current GPS location rendered seamlessly via Leaflet maps in the chat bubble
 - **GIF support** — integrated GIPHY search to send animated GIFs
 - **Stickers** — send expressive sticker packs
 - **Voice messages** — record audio directly in the app and send instantly
