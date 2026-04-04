@@ -64,6 +64,7 @@ export async function getSessionKey(peerId) {
     const sessionKey = await deriveSessionKey(
       myKeyPair.privateKey,
       peerPublicKey,
+      myKeyPair.sessionSalt,
       bundle.sessionSalt
     );
 

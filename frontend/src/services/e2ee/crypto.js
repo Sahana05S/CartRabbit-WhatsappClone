@@ -33,8 +33,10 @@ export function arrayBufferToBase64(buffer) {
 }
 
 export function base64ToArrayBuffer(b64) {
-  const binary = atob(b64);
-  const bytes  = new Uint8Array(binary.length);
+  // Handle URL-safe base64 if present (+ or / replaced by - or _)
+  const standardB64 = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const binary      = atob(standardB64);
+  const bytes       = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes.buffer;
 }
@@ -99,8 +101,18 @@ export async function importPublicKey(base64Spki) {
  * @param {string}     sessionSalt   — base64 16-byte salt from server key bundle
  * @returns {Promise<CryptoKey>}     — AES-GCM-256 key (non-extractable)
  */
-export async function deriveSessionKey(myPrivateKey, peerPublicKey, sessionSalt) {
-  const saltBuffer = base64ToArrayBuffer(sessionSalt);
+export async function deriveSessionKey(myPrivateKey, peerPublicKey, mySaltBase64, peerSaltBase64) {
+  // Sort salts alphabetically to ensure both parties combine them in the same order
+  const sortedSalts = [mySaltBase64, peerSaltBase64].sort();
+  
+  // Convert sorted base64 salts to Uint8Arrays
+  const salt1 = new Uint8Array(base64ToArrayBuffer(sortedSalts[0]));
+  const salt2 = new Uint8Array(base64ToArrayBuffer(sortedSalts[1]));
+  
+  // Concatenate them into a single 32-byte salt buffer
+  const saltBuffer = new Uint8Array(salt1.length + salt2.length);
+  saltBuffer.set(salt1, 0);
+  saltBuffer.set(salt2, salt1.length);
 
   // Step 1: ECDH → raw shared bits (we use deriveBits → importKey as HKDF)
   const sharedBits = await crypto.subtle.deriveBits(

@@ -32,12 +32,13 @@ export async function initE2EE() {
   }
 
   try {
-    // Check if server already has our public key
     const { data } = await api.get('/keys/me');
     const localPublicB64 = await exportPublicKey(keyPair.publicKey);
 
-    // If server has it AND it matches what we have locally, we're good.
-    if (data.success && data.bundle?.identityKey === localPublicB64) {
+    // If server has it AND both identityKey and sessionSalt match what we have locally, we're good.
+    if (data.success && 
+        data.bundle?.identityKey === localPublicB64 && 
+        data.bundle?.sessionSalt === keyPair.sessionSalt) {
       return keyPair;
     }
 

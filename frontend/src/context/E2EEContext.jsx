@@ -97,18 +97,21 @@ export const E2EEProvider = ({ children }) => {
     if (!iv || !ciphertext) return null;
 
     try {
-      const senderId = message.senderId?._id || message.senderId;
-      // We decrypt using the sender's session key (ECDH is symmetric)
-      const peerId   = senderId.toString() === currentUser._id.toString()
-        ? (message.receiverId?._id || message.receiverId)
-        : senderId;
+      const senderId   = (message.senderId?._id || message.senderId || '').toString();
+      const receiverId = (message.receiverId?._id || message.receiverId || '').toString();
 
-      let sessionKey = await getSessionKey(peerId.toString());
+      if (!senderId || (!receiverId && message.chatType === 'direct')) return null;
+
+      // We decrypt using the peer's session key (ECDH is symmetric)
+      const isMe   = senderId === currentUser._id.toString();
+      const peerId = isMe ? receiverId : senderId;
+
+      let sessionKey = await getSessionKey(peerId);
       if (!sessionKey) return null;
 
       const expectedAad = {
-        senderId:   senderId.toString(),
-        receiverId: (message.receiverId?._id || message.receiverId).toString(),
+        senderId:   senderId,
+        receiverId: receiverId,
       };
 
       let plaintext = await decryptRaw(sessionKey, iv, ciphertext, aad, expectedAad);
