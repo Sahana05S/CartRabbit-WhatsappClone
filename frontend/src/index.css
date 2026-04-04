@@ -35,7 +35,7 @@
   }
 
   .glass-input {
-    @apply bg-glass-heavy border border-glass-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-200 rounded-lg px-4 py-2;
+    @apply bg-glass-heavy border border-glass-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-200 rounded-lg px-4 py-2 text-white placeholder:text-[#aebac1]/70;
   }
 
   .btn-primary {

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const emailValidator = require('deep-email-validator');
 const User = require('../models/User');
 
 const generateToken = (id) =>
@@ -30,6 +31,23 @@ const register = async (req, res) => {
     if (existingUser) {
       const field = existingUser.email === email.toLowerCase() ? 'Email' : 'Username';
       return res.status(409).json({ success: false, message: `${field} is already in use.` });
+    }
+
+    // Attempt deep validation
+    const { valid, reason, validators } = await emailValidator.validate(email);
+    if (!valid && reason !== 'smtp') {
+      // If it fails on regex, typo, or disposable check, or MX record, outright reject.
+      // (SMTP checks can sometimes fail falsely for big domains so we only strictly block on others, 
+      // but if you want to strictly block on SMTP too:)
+      if (!validators[reason]?.valid) {
+          return res.status(400).json({ success: false, message: 'This email does not exist or is invalid.' });
+      }
+    }
+
+    // Extra strict: if the smtp check itself fails, we can assume it doesn't exist
+    // However, some providers block SMTP pinging. But as requested "does not exist immediately"
+    if (!valid && reason === 'smtp' && !validators.smtp.valid) {
+      return res.status(400).json({ success: false, message: 'This email does not exist.' });
     }
 
     const salt = await bcrypt.genSalt(12);
