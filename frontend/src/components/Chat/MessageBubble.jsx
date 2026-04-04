@@ -19,6 +19,7 @@ import { useE2EE } from '../../context/E2EEContext';
 import AttachmentMessage from './AttachmentMessage';
 import HighlightText from './HighlightText';
 import AudioPlayer from './AudioPlayer';
+import LocationMessage from './LocationMessage';
 import DeleteMessageMenu from './DeleteMessageMenu';
 import ForwardModal from './ForwardModal';
 import MessageInfoPanel from './MessageInfoPanel';
@@ -261,6 +262,8 @@ const MessageBubble = ({
                 duration={message.attachment?.duration}
                 variant={isSent ? 'dark' : 'light'}
               />
+            ) : message.messageType === 'location' ? (
+              <LocationMessage location={message.location} />
             ) : (message.messageType === 'image' || message.messageType === 'file') ? (
               <AttachmentMessage message={message} isSent={isSent} />
             ) : (message.messageType === 'gif' || message.messageType === 'sticker') ? (

@@ -10,7 +10,8 @@ import {
   Image as ImageIcon,
   MoreVertical,
   Plus,
-  Loader2
+  Loader2,
+  MapPin
 } from 'lucide-react';
 import GifPicker from './GifPicker';
 import AudioRecorder from './AudioRecorder';
@@ -198,6 +199,53 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
     }
   };
 
+  const handleLocationShare = () => {
+    setShowAttachments(false);
+    if (!navigator.geolocation) {
+      setUploadError('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    setSending(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          let payload = { 
+            receiverId, 
+            messageType: 'location', 
+            location: { lat: latitude, lng: longitude } 
+          };
+          if (isGroup) payload.isGroup = true;
+          
+          if (replyTo) {
+            payload.replyTo = {
+              messageId: replyTo._id,
+              senderId: replyTo.senderId?._id || replyTo.senderId,
+              senderName: replyTo.senderName,
+              previewText: '📍 Location',
+              messageType: 'location',
+            };
+          }
+
+          const { data } = await api.post('/messages', payload);
+          onMessageSent(data.message);
+          onCancelReply?.();
+        } catch (err) {
+          console.error("Location share error", err);
+          setUploadError('Failed to send location');
+        } finally {
+          setSending(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error", error);
+        setUploadError('Unable to retrieve your location');
+        setSending(false);
+      }
+    );
+  };
+
   const handleSendSticker = async (sticker) => {
     try {
       setSending(true);
@@ -286,6 +334,10 @@ export default function MessageInput({ receiverId, isGroup, onMessageSent, reply
                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-3 px-4 py-2 hover:bg-glass rounded-xl text-left transition-all">
                   <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><FileText className="w-5 h-5" /></div>
                   <span className="text-sm font-bold">Document</span>
+                </button>
+                <button onClick={handleLocationShare} className="flex items-center gap-3 px-4 py-2 hover:bg-glass rounded-xl text-left transition-all">
+                  <div className="p-2 bg-green-500/10 rounded-lg text-green-500"><MapPin className="w-5 h-5" /></div>
+                  <span className="text-sm font-bold">Location</span>
                 </button>
                 <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
               </motion.div>

@@ -6,7 +6,7 @@ const { sendPushNotification, getMessagePreview } = require('../utils/notificati
 // POST /api/messages
 const sendMessage = async (req, res) => {
   try {
-    const { receiverId, text, replyTo, isGroup, giphy, messageType, isE2EE, e2ee } = req.body;
+    const { receiverId, text, replyTo, isGroup, giphy, messageType, isE2EE, e2ee, location } = req.body;
     const senderId = req.user._id;
 
     if (!receiverId) {
@@ -14,9 +14,10 @@ const sendMessage = async (req, res) => {
     }
 
     const isGifOrSticker = messageType === 'gif' || messageType === 'sticker';
+    const isLocation = messageType === 'location';
     // For E2EE messages the text field is intentionally empty; content is in the e2ee envelope.
     const hasTextContent = text && text.trim();
-    if (!isGifOrSticker && !isE2EE && !hasTextContent) {
+    if (!isGifOrSticker && !isLocation && !isE2EE && !hasTextContent) {
       return res.status(400).json({ success: false, message: 'Message text cannot be empty.' });
     }
 
@@ -35,6 +36,7 @@ const sendMessage = async (req, res) => {
       text: isE2EE ? '' : (text ? text.trim() : ''),
       messageType: messageType || 'text',
       giphy: giphy || null,
+      location: location || null,
       isE2EE: !!isE2EE,
     };
 

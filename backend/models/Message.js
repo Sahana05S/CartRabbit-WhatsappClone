@@ -32,8 +32,13 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'file', 'audio', 'gif', 'sticker'],
+      enum: ['text', 'image', 'file', 'audio', 'gif', 'sticker', 'location'],
       default: 'text',
+    },
+    location: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+      address: { type: String, default: null }
     },
     attachment: {
       fileUrl:   { type: String,  default: null },
