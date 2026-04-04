@@ -271,11 +271,9 @@ const MessageBubble = ({
                 <button onClick={handleCopy} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
                   {copied ? 'Copied!' : 'Copy'} <Copy className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
                 </button>
-                {isSent && (
-                  <button onClick={() => { setShowInfo(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
-                    Message Info <Info className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
-                  </button>
-                )}
+                <button onClick={() => { setShowInfo(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold flex items-center justify-between group">
+                  Message Info <Info className="w-4 h-4 text-text-muted group-hover:text-accent transition-colors" />
+                </button>
                 <div className="border-t border-border my-1" />
                 <button onClick={() => { setShowDeleteMenu(true); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 hover:bg-bg-hover text-[13px] font-semibold text-red-500 flex items-center justify-between group">
                   Delete <Trash2 className="w-4 h-4 opacity-70 group-hover:opacity-100 transition-opacity" />
