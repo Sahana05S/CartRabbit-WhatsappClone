@@ -15,8 +15,10 @@ import {
   Star,
   Loader2,
   ArrowLeft,
-  CircleDashed
+  CircleDashed,
+  UserPlus
 } from 'lucide-react';
+import AddContactModal from '../Modals/AddContactModal';
 import { useUsers } from '../../hooks/useUsers';
 import { useSocket } from '../../context/SocketContext';
 import { useAuth } from '../../context/AuthContext';
@@ -41,6 +43,7 @@ const ChatList = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // all, groups, unread
+  const [showAddContact, setShowAddContact] = useState(false);
 
   const BACKEND_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
   
@@ -97,6 +100,9 @@ const ChatList = ({
         <div className="flex items-center gap-1">
           <button className="btn-ghost" onClick={onOpenStatus} title="Status Updates">
             <CircleDashed className="w-5 h-5" />
+          </button>
+          <button className="btn-ghost" onClick={() => setShowAddContact(true)} title="Add Contact">
+            <UserPlus className="w-5 h-5" />
           </button>
           <button className="btn-ghost" onClick={onOpenNewChat} title="New Chat">
             <MessageSquarePlus className="w-5 h-5" />
@@ -292,6 +298,18 @@ const ChatList = ({
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {showAddContact && (
+          <AddContactModal
+            onClose={() => setShowAddContact(false)}
+            onContactAdded={(user) => {
+              setShowAddContact(false);
+              onSelectChat(user); // Open chat with the new contact immediately
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
