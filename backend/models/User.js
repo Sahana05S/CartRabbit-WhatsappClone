@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const AVATAR_COLORS = ['#7c3aed', '#2563eb', '#059669', '#dc2626', '#d97706', '#db2777', '#0891b2'];
 
@@ -124,8 +125,29 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // ─── Forgot Password Fields ──────────────────────────────────────────────
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
   },
   { timestamps: true }
 );
+
+// Generate and hash password reset token
+userSchema.methods.getResetPasswordToken = function () {
+  // Generate token
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  // Hash token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Set expire (15 minutes)
+  this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+  return resetToken;
+};
 
 module.exports = mongoose.model('User', userSchema);

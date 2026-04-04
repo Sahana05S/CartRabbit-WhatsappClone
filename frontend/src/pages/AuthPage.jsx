@@ -23,6 +23,8 @@ const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const initialMode = window.location.pathname.includes('register') ? false : true;
   const [isLogin, setIsLogin] = useState(initialMode);
+  const [isForgot, setIsForgot] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(
@@ -58,12 +60,14 @@ const AuthPage = () => {
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError(null);
+    setSuccessMsg(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
     
     try {
       if (mfaState.required) {
@@ -75,6 +79,9 @@ const AuthPage = () => {
         const { data } = await api.post(endpoint, payload);
         login(data.token, data.user);
         navigate('/chat');
+      } else if (isForgot) {
+        const { data } = await api.post('/auth/forgot-password', { email: formData.email });
+        setSuccessMsg(data.message || 'Password reset link sent! Check your logs.');
       } else {
         const endpoint = isLogin ? '/auth/login' : '/auth/register';
         const payload = isLogin
@@ -113,7 +120,9 @@ const AuthPage = () => {
 
   const switchMode = (loginMode) => {
     setIsLogin(loginMode);
+    setIsForgot(false);
     setError(null);
+    setSuccessMsg(null);
     setFormData({ ...formData, username: '', email: '', password: '' });
     navigate(loginMode ? '/login' : '/register', { replace: true });
   };
@@ -178,7 +187,7 @@ const AuthPage = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                  {!isLogin && (
+                  {!isForgot && !isLogin && (
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#aebac1]" />
                       <input 
@@ -208,26 +217,36 @@ const AuthPage = () => {
                     />
                   </div>
 
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#aebac1]" />
-                    <input 
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      placeholder="Password"
-                      required
-                      className="glass-input w-full pl-11 pr-11"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      autoComplete={isLogin ? "current-password" : "new-password"}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aebac1] hover:text-white transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+                  {!isForgot && (
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#aebac1]" />
+                      <input 
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        placeholder="Password"
+                        required
+                        className="glass-input w-full pl-11 pr-11"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        autoComplete={isLogin ? "current-password" : "new-password"}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#aebac1] hover:text-white transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {!isForgot && isLogin && (
+                    <div className="flex justify-end mt-[-8px]">
+                      <button type="button" onClick={() => setIsForgot(true)} className="text-sm text-accent hover:underline">
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
 
                   {error && (
                     <motion.p 
@@ -239,6 +258,16 @@ const AuthPage = () => {
                     </motion.p>
                   )}
 
+                  {successMsg && (
+                    <motion.p 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="text-emerald-400 text-sm bg-emerald-400/10 p-3 rounded-lg border border-emerald-400/20"
+                    >
+                      {successMsg}
+                    </motion.p>
+                  )}
+
                   <button 
                     type="submit" 
                     disabled={loading}
@@ -246,29 +275,43 @@ const AuthPage = () => {
                   >
                     {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : (
                       <>
-                        {isLogin ? 'Sign In' : 'Create Account'}
+                        {isForgot ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Create Account')}
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}
                   </button>
+
+                  {isForgot && (
+                    <button 
+                      type="button" 
+                      onClick={() => { setIsForgot(false); setError(null); setSuccessMsg(null); }} 
+                      className="text-[#aebac1] hover:text-white mt-2 text-sm w-full"
+                    >
+                      Back to Login
+                    </button>
+                  )}
                 </form>
 
-                <div className="relative my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-glass-border"></div>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[#1c2a33] px-2 text-[#aebac1]">Or continue with</span>
-                  </div>
-                </div>
+                {!isForgot && (
+                  <>
+                    <div className="relative my-8">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-glass-border"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-[#1c2a33] px-2 text-[#aebac1]">Or continue with</span>
+                      </div>
+                    </div>
 
-                <button 
-                  onClick={handleGoogleLogin}
-                  className="w-full flex items-center justify-center gap-3 glass-input hover:bg-glass transition-all py-3"
-                >
-                  <Chrome className="w-5 h-5 text-white" />
-                  <span className="font-medium">Google</span>
-                </button>
+                    <button 
+                      onClick={handleGoogleLogin}
+                      className="w-full flex items-center justify-center gap-3 glass-input hover:bg-glass transition-all py-3"
+                    >
+                      <Chrome className="w-5 h-5 text-white" />
+                      <span className="font-medium">Google</span>
+                    </button>
+                  </>
+                )}
               </motion.div>
             ) : (
               <motion.div

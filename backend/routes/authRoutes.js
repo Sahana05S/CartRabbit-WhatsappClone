@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const passport = require('../config/passport');
 const jwt = require('jsonwebtoken');
-const { register, login, getMe } = require('../controllers/authController');
+const { register, login, getMe, forgotPassword, resetPassword } = require('../controllers/authController');
 const { setupMfa, verifyEnableMfa, completeLoginMfa, recoveryLoginMfa, regenerateRecoveryCodes, disableMfa } = require('../controllers/mfaController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -11,6 +11,8 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 // ── Existing email/password routes (untouched) ────────────────────────────────
 router.post('/register', register);
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 router.get('/me', protect, getMe);
 
 // ── MFA routes ────────────────────────────────────────────────────────────────
