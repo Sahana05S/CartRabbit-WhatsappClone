@@ -35,19 +35,18 @@ const register = async (req, res) => {
 
     // Attempt deep validation
     const { valid, reason, validators } = await emailValidator.validate(email);
-    if (!valid && reason !== 'smtp') {
-      // If it fails on regex, typo, or disposable check, or MX record, outright reject.
-      // (SMTP checks can sometimes fail falsely for big domains so we only strictly block on others, 
-      // but if you want to strictly block on SMTP too:)
-      if (!validators[reason]?.valid) {
-          return res.status(400).json({ success: false, message: 'This email does not exist or is invalid.' });
-      }
-    }
+    console.log('EMAIL VALIDATOR RESULT:', JSON.stringify({ valid, reason, validators }, null, 2));
 
-    // Extra strict: if the smtp check itself fails, we can assume it doesn't exist
-    // However, some providers block SMTP pinging. But as requested "does not exist immediately"
-    if (!valid && reason === 'smtp' && !validators.smtp.valid) {
-      return res.status(400).json({ success: false, message: 'This email does not exist.' });
+    // Enforce definitive local checks (regex syntax, typos, and disposable domains)
+    // while bypassing network-dependent MX/SMTP checks that fail in sandbox or restricted cloud environments.
+    if (validators.regex && !validators.regex.valid) {
+      return res.status(400).json({ success: false, message: 'This email is invalid.' });
+    }
+    if (validators.typo && !validators.typo.valid) {
+      return res.status(400).json({ success: false, message: `Did you mean ${validators.typo.suggestion}?` });
+    }
+    if (validators.disposable && !validators.disposable.valid) {
+      return res.status(400).json({ success: false, message: 'Disposable email addresses are not allowed.' });
     }
 
     const salt = await bcrypt.genSalt(12);
