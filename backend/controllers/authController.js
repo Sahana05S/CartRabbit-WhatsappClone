@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailValidator = require('deep-email-validator');
 const User = require('../models/User');
+const sendEmail = require('../utils/email');
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -65,13 +66,28 @@ const register = async (req, res) => {
       verificationExpire: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
 
-    // Simulate sending email — print to console
+    // Send verification email
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
     const verifyUrl = `${CLIENT_URL}/verify-email/${rawToken}`;
-    console.log(`\n\n--- EMAIL VERIFICATION SIMULATION ---`);
-    console.log(`To verify the account for ${user.email}, open this link:\n`);
-    console.log(`${verifyUrl}\n`);
-    console.log(`--------------------------------------\n\n`);
+    
+    await sendEmail({
+      to: user.email,
+      subject: 'Verify your NexTalk account',
+      text: `Hello ${user.username},\n\nWelcome to NexTalk! Please verify your account by clicking the link below:\n\n${verifyUrl}\n\nThis link is valid for 24 hours.\n\nBest regards,\nNexTalk Security Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+          <h2 style="color: #075e54; text-align: center;">Welcome to NexTalk!</h2>
+          <p>Hello <strong>${user.username}</strong>,</p>
+          <p>Thank you for signing up for NexTalk. To complete your registration and verify your account, please click the secure link below:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${verifyUrl}" style="background-color: #128c7e; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">Verify Email Address</a>
+          </div>
+          <p style="font-size: 12px; color: #666;">This link is valid for 24 hours. If you did not register for a NexTalk account, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eeeeee;" />
+          <p style="font-size: 12px; color: #999; text-align: center;">Secure. Premium. Real-time.</p>
+        </div>
+      `,
+    });
 
     res.status(201).json({
       success: true,
@@ -185,11 +201,25 @@ const forgotPassword = async (req, res) => {
     const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
     const resetUrl = `${CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Simulate sending email by logging to the console
-    console.log(`\n\n--- PASSWORD RESET SIMULATION ---`);
-    console.log(`To reset password for ${user.email}, go to the following link:\n`);
-    console.log(`${resetUrl}\n`);
-    console.log(`----------------------------------\n\n`);
+    // Send password reset email
+    await sendEmail({
+      to: user.email,
+      subject: 'Reset your NexTalk password',
+      text: `Hi ${user.displayName || user.username},\n\nYou requested a password reset. Please click the link below to set a new password:\n\n${resetUrl}\n\nThis link is valid for 15 minutes.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nNexTalk Security Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+          <h2 style="color: #075e54; text-align: center;">Reset your Password</h2>
+          <p>Hi <strong>${user.displayName || user.username}</strong>,</p>
+          <p>We received a request to reset your NexTalk account password. Click the button below to choose a new password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="font-size: 12px; color: #666;">This link is valid for 15 minutes. If you did not make this request, you can safely ignore this email and your password will remain unchanged.</p>
+          <hr style="border: none; border-top: 1px solid #eeeeee;" />
+          <p style="font-size: 12px; color: #999; text-align: center;">Secure. Premium. Real-time.</p>
+        </div>
+      `,
+    });
 
     res.status(200).json({ success: true, message: 'If an account with that email exists, a password reset link has been sent.' });
   } catch (error) {
