@@ -20,17 +20,21 @@ import {
   AlertTriangle,
   Download,
   Palette,
-  ChevronRight
+  ChevronRight,
+  User,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../api/axios';
+import DeleteAccountModal from '../Modals/DeleteAccountModal';
 
 const SettingsPanel = ({ onClose }) => {
   const { currentUser, updateUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeCategory, setActiveCategory] = useState(null); // null = menu list
   const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // MFA Flow States
@@ -171,7 +175,8 @@ const SettingsPanel = ({ onClose }) => {
     { id: 'security', label: 'Security', icon: Lock, color: 'text-accent' },
     { id: 'notifications', label: 'Notifications', icon: Bell, color: 'text-yellow-400' },
     { id: 'chat', label: 'Chat Settings', icon: MessageSquare, color: 'text-emerald-400' },
-    { id: 'appearance', label: 'Appearance', icon: Palette, color: 'text-purple-400' }
+    { id: 'appearance', label: 'Appearance', icon: Palette, color: 'text-purple-400' },
+    { id: 'account', label: 'Account', icon: User, color: 'text-rose-500' }
   ];
 
   const panelVariants = {
@@ -404,6 +409,34 @@ const SettingsPanel = ({ onClose }) => {
                   </div>
                 </div>
               )}
+
+              {activeCategory === 'account' && (
+                <div className="space-y-6">
+                  <div className="bg-bg-panel border border-border rounded-2xl p-6 shadow-sm space-y-4">
+                    <div className="flex items-center gap-4 text-rose-500">
+                      <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center border border-rose-500/20">
+                        <Trash2 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-md font-bold text-text-primary">Delete Your Account</h3>
+                        <p className="text-xs text-text-muted">Permanently delete your account and data</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-text-muted leading-relaxed border-t border-border pt-4">
+                      Deleting your account is permanent and cannot be undone. This will delete all your messages, contacts, active statuses, E2EE identity keys, and remove you from all groups.
+                    </p>
+
+                    <button 
+                      onClick={() => setShowDeleteModal(true)}
+                      className="w-full bg-red-600/10 hover:bg-red-600 border border-red-600/20 hover:border-red-600 text-red-500 hover:text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Account
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -412,6 +445,10 @@ const SettingsPanel = ({ onClose }) => {
       <footer className="p-6 bg-bg-secondary/40 border-t border-border">
         <p className="text-[10px] text-text-muted text-center uppercase tracking-widest font-black opacity-40">NexTalk Settings Engine v2.0</p>
       </footer>
+
+      {showDeleteModal && (
+        <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />
+      )}
     </motion.div>
   );
 };

@@ -1,5 +1,10 @@
 const User = require('../models/User');
 const Message = require('../models/Message');
+const Group = require('../models/Group');
+const Status = require('../models/Status');
+const UserKeyBundle = require('../models/UserKeyBundle');
+const bcrypt = require('bcryptjs');
+const { getIO } = require('../socket/socketHandler');
 
 // GET /api/users — all contacts of the logged-in user
 const getAllUsers = async (req, res) => {
@@ -110,7 +115,7 @@ const toggleArchiveChat = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
-    res.json({ success: true, user });
+    res.json({ success: true, user: { ...user.toObject(), loginMethod: req.loginMethod } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch user profile.' });
   }
@@ -274,6 +279,84 @@ const searchUsers = async (req, res) => {
   }
 };
 
+// DELETE /api/users/delete-account
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const loginMethod = req.loginMethod || 'local';
+    
+    if (loginMethod === 'local' && user.password) {
+      const { password } = req.body;
+      if (!password) {
+        return res.status(400).json({ success: false, message: 'Password is required to delete your account.' });
+      }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Incorrect password.' });
+      }
+    } else {
+      const { confirm } = req.body;
+      if (confirm !== 'DELETE') {
+        return res.status(400).json({ success: false, message: 'Please type DELETE to confirm.' });
+      }
+    }
+
+    // 1. Remove user from all other users' lists
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          contacts: userId,
+          pinnedChats: userId,
+          archivedChats: userId
+        }
+      }
+    );
+
+    // 2. Delete user's statuses
+    await Status.deleteMany({ userId });
+
+    // 3. Delete user's E2EE key bundle
+    await UserKeyBundle.deleteOne({ userId });
+
+    // 4. Handle groups
+    const userGroups = await Group.find({ members: userId });
+    for (const group of userGroups) {
+      group.members = group.members.filter(m => m.toString() !== userId.toString());
+      group.admins = group.admins.filter(a => a.toString() !== userId.toString());
+      
+      if (group.members.length === 0) {
+        await group.deleteOne();
+      } else {
+        if (group.admins.length === 0) {
+          group.admins.push(group.members[0]);
+        }
+        await group.save();
+        const io = getIO();
+        const populated = await Group.findById(group._id).populate('members', 'username avatarColor');
+        io.to(group._id.toString()).emit('groupUpdated', populated);
+      }
+    }
+
+    // 5. Delete messages sent or received by this user
+    await Message.deleteMany({ senderId: userId });
+    await Message.deleteMany({ receiverId: userId, chatType: 'direct' });
+
+    // 6. Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ success: true, message: 'Account permanently deleted.' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete account.' });
+  }
+};
+
 module.exports = {
   searchUsers,
   getAllUsers,
@@ -285,5 +368,6 @@ module.exports = {
   uploadWallpaper,
   togglePinChat,
   toggleArchiveChat,
-  addContact
+  addContact,
+  deleteAccount
 };

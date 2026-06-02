@@ -56,7 +56,7 @@ router.get(
       }
 
       const token = jwt.sign(
-        { id: req.user._id },
+        { id: req.user._id, method: 'google' },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
       );

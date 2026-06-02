@@ -23,6 +23,7 @@ const protect = async (req, res, next) => {
     }
 
     req.user = user;
+    req.loginMethod = decoded.method || 'local';
     next();
   } catch (error) {
     return res.status(401).json({ success: false, message: 'Not authorized. Token is invalid or expired.' });

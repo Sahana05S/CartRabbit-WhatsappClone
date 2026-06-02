@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const {
   searchUsers, getAllUsers, getUserById, getMe, updateProfile, updateSettings, updateAvatar,
-  uploadWallpaper, togglePinChat, toggleArchiveChat, addContact
+  uploadWallpaper, togglePinChat, toggleArchiveChat, addContact, deleteAccount
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { upload, multerErrorHandler } = require('../middleware/uploadMiddleware');
 
 router.get('/', protect, getAllUsers);
+router.delete('/delete-account', protect, deleteAccount);
 router.get('/me', protect, getMe);
 router.patch('/profile', protect, updateProfile);
 router.patch('/settings', protect, updateSettings);

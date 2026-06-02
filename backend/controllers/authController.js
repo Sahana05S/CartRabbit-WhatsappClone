@@ -5,18 +5,22 @@ const emailValidator = require('deep-email-validator');
 const User = require('../models/User');
 const sendEmail = require('../utils/email');
 
-const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id, method = 'local') =>
+  jwt.sign({ id, method }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 
-const formatUser = (user) => ({
-  _id: user._id,
-  username: user.username,
-  email: user.email,
-  avatarColor: user.avatarColor,
-  createdAt: user.createdAt,
-});
+const formatUser = (user) => {
+  const u = user.toObject ? user.toObject() : { ...user };
+  delete u.password;
+  delete u.mfaSecret;
+  delete u.mfaRecoveryCodes;
+  delete u.resetPasswordToken;
+  delete u.resetPasswordExpire;
+  delete u.verificationToken;
+  delete u.verificationExpire;
+  return u;
+};
 
 // POST /api/auth/register
 const register = async (req, res) => {
@@ -140,8 +144,8 @@ const login = async (req, res) => {
       return res.json({ success: true, mfaRequired: true, mfaToken });
     }
 
-    const token = generateToken(user._id);
-    res.json({ success: true, token, user: formatUser(user) });
+    const token = generateToken(user._id, 'local');
+    res.json({ success: true, token, user: { ...formatUser(user), loginMethod: 'local' } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ success: false, message: 'Server error during login.' });
@@ -150,7 +154,7 @@ const login = async (req, res) => {
 
 // GET /api/auth/me
 const getMe = async (req, res) => {
-  res.json({ success: true, user: formatUser(req.user) });
+  res.json({ success: true, user: { ...formatUser(req.user), loginMethod: req.loginMethod } });
 };
 
 // GET /api/auth/verify-email/:token
@@ -172,8 +176,8 @@ const verifyEmail = async (req, res) => {
     user.verificationExpire = null;
     await user.save({ validateBeforeSave: false });
 
-    const token = generateToken(user._id);
-    res.json({ success: true, message: 'Email verified! Welcome to NexTalk.', token, user: formatUser(user) });
+    const token = generateToken(user._id, 'local');
+    res.json({ success: true, message: 'Email verified! Welcome to NexTalk.', token, user: { ...formatUser(user), loginMethod: 'local' } });
   } catch (error) {
     console.error('Verify email error:', error);
     res.status(500).json({ success: false, message: 'Failed to verify email.' });
